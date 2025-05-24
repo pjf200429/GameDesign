@@ -1,0 +1,4 @@
+repository "GameDesignProject@tj_wechat_os_qy09_qls7gfhr54b7bmuqatzi@cloud.cn"
+  path "/"
+    br "/main"
+    co "/main"
