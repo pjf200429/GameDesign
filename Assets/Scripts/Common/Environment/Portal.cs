@@ -1,64 +1,66 @@
 using UnityEngine;
 using System.Collections;
 
+[RequireComponent(typeof(Collider2D))]
 public class Portal : MonoBehaviour
 {
-    [Header("Portal传送目标")]
-    public GameObject targetRoom;
-    public Transform targetSpawnPoint;
+    [Header("到下一个房间前的延迟（秒）")]
+    public float delay = 0.2f;
 
-    [Header("Portal设置")]
+    [Header("是否在传送后关闭本房间")]
     public bool deactivateCurrentRoom = true;
-    private bool hasTeleported = false;
 
-    private void OnTriggerEnter2D(Collider2D other)
+    bool _triggered = false;
+    Collider2D _col;
+
+    void Awake()
     {
-        if (!hasTeleported && other.CompareTag("Player"))
-        {
-            hasTeleported = true;
-            Debug.Log("[Portal] 玩家触发传送门！");
-
-            StartCoroutine(HandleTeleport(other));
-        }
+        _col = GetComponent<Collider2D>();
+        if (_col != null)
+            _col.isTrigger = true;
     }
 
-    private IEnumerator HandleTeleport(Collider2D player)
+    void OnTriggerEnter2D(Collider2D other)
     {
-        // 累加房间索引
-        RoomManager.Instance.currentRoomIndex++;
+        // 只对 Player 生效，且只触发一次
+        if (_triggered || !other.CompareTag("Player")) return;
 
-        yield return null;
+        _triggered = true;
+        Debug.Log("[Portal] 玩家进入传送门，准备跳转下一个房间…");
 
-        // 获取目标出生点
-        Transform nextSpawn = RoomManager.Instance.GetCurrentRespawnPoint();
-        if (nextSpawn != null)
+        // 开始协程，延迟调用下一个房间
+        StartCoroutine(DoTeleport(other.gameObject));
+    }
+
+    IEnumerator DoTeleport(GameObject player)
+    {
+        yield return new WaitForSeconds(delay);
+
+        // 调用 LevelManager 切换房间／阶段
+        var lm = FindObjectOfType<LevelManager>();
+        if (lm != null)
         {
-            player.transform.position = nextSpawn.position;
-
-            var movement = player.GetComponent<PlayerMovement>();
-            if (movement != null)
-            {
-                movement.respawnPoint = nextSpawn;
-                Debug.Log($"[Portal] 成功传送到第 {RoomManager.Instance.currentRoomIndex} 个房间！");
-            }
+            lm.NextRoomOrStage();
+            Debug.Log("[Portal] 已请求切换到下一个房间。");
         }
         else
         {
-            Debug.LogWarning($"[Portal] 找不到第 {RoomManager.Instance.currentRoomIndex} 个房间的出生点！");
+            Debug.LogError("[Portal] 未找到 LevelManager，无法切换房间！");
         }
 
-        // 关闭当前房间
+        // 可选：把当前房间 GameObject（通常是根节点）禁用
         if (deactivateCurrentRoom)
         {
-            Transform currentRoom = transform.root;
-            if (currentRoom != null)
-            {
-                currentRoom.gameObject.SetActive(false);
-                Debug.Log("[Portal] 当前房间已关闭！");
-            }
+            var roomRoot = transform.root.gameObject;
+            roomRoot.SetActive(false);
+            Debug.Log("[Portal] 已关闭当前房间。");
         }
+
+        // 禁用自己，避免重复触发
+        gameObject.SetActive(false);
     }
 }
+
 
 
 

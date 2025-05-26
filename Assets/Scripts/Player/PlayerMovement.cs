@@ -1,18 +1,22 @@
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("Movement Settings")]
     public float moveForce = 50f;
     public float maxSpeed = 5f;
     public float jumpForce = 6f;
     public int maxJumps = 2;
     public float deathY = -10f;
 
-    public Transform groundCheck;
+    [Header("Ground Check (Local Offset)")]
+    public Vector2 groundCheckOffset = new Vector2(0f, -0.5f);
     public float groundCheckRadius = 0.2f;
     public LayerMask groundLayer;
 
+    [Header("Respawn")]
+    // 不手动拖：运行时自动根据场景中 Tag 查找
     public Transform respawnPoint;
 
     [Header("Attack")]
@@ -23,38 +27,73 @@ public class PlayerMovement : MonoBehaviour
     [Header("Visuals")]
     public Transform visualRoot;
 
-    private Rigidbody2D rb;
-    private int jumpCount;
-    private bool isGrounded;
-    private bool isFacingRight = true;
+    Rigidbody2D rb;
+    Animator anim;
+    int jumpCount;
+    bool isGrounded;
+    bool isFacingRight = true;
+    bool isDead = false;
 
-    private Animator anim;
-    private bool isDead = false;
+    void Awake()
+    {
+        // 保证在场景加载后查找出生点
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    // 每次场景加载完成时回调
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        try
+        {
+            var go = GameObject.FindGameObjectWithTag("RespawnPoint");
+            if (go != null)
+            {
+                respawnPoint = go.transform;
+                Debug.Log($"[PlayerMovement] 在场景“{scene.name}”中找到 RespawnPoint");
+            }
+            else
+            {
+                respawnPoint = null;
+                Debug.Log($"[PlayerMovement] 场景“{scene.name}”中无 RespawnPoint，将无法复活");
+            }
+        }
+        catch (UnityException)
+        {
+            respawnPoint = null;
+            Debug.Log($"[PlayerMovement] 未定义 Tag “RespawnPoint”，跳过出生点查找");
+        }
+    }
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponentInChildren<Animator>();
 
+        // 初次面板朝向
         UpdateAttackPointFacing();
 
-        PlayerHealthController health = GetComponent<PlayerHealthController>();
+        var health = GetComponent<PlayerHealthController>();
         if (health != null)
-        {
             health.OnPlayerDied += DieAndRespawn;
-        }
     }
 
     void Update()
     {
         if (isDead) return;
 
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
-        if (isGrounded && jumpCount != 0)
-        {
-            jumpCount = 0;
-        }
+        // 地面检测
+        Vector2 checkPos = (Vector2)transform.position + groundCheckOffset;
+        isGrounded = Physics2D.OverlapCircle(checkPos, groundCheckRadius, groundLayer);
 
+        if (isGrounded && jumpCount > 0)
+            jumpCount = 0;
+
+        // 跳跃
         if (Input.GetKeyDown(KeyCode.Space) && jumpCount < maxJumps)
         {
             rb.velocity = new Vector2(rb.velocity.x, 0f);
@@ -62,132 +101,97 @@ public class PlayerMovement : MonoBehaviour
             jumpCount++;
         }
 
+        // 掉出死区
         if (transform.position.y < deathY)
-        {
             DieAndRespawn();
-        }
 
+        // 测试特效
         if (Input.GetKeyDown(KeyCode.K))
-        {
             PlaySlashEffect();
-        }
     }
 
     void FixedUpdate()
     {
         if (isDead) return;
 
-        float moveInput = Input.GetAxisRaw("Horizontal");
+        float h = Input.GetAxisRaw("Horizontal");
+        if (h > 0 && !isFacingRight) Flip();
+        else if (h < 0 && isFacingRight) Flip();
 
-        if (moveInput > 0 && !isFacingRight) Flip();
-        else if (moveInput < 0 && isFacingRight) Flip();
+        if (Mathf.Abs(rb.velocity.x) < maxSpeed || Mathf.Sign(h) != Mathf.Sign(rb.velocity.x))
+            rb.AddForce(Vector2.right * h * moveForce);
 
-        if (Mathf.Abs(rb.velocity.x) < maxSpeed || Mathf.Sign(moveInput) != Mathf.Sign(rb.velocity.x))
-        {
-            rb.AddForce(new Vector2(moveInput * moveForce, 0f));
-        }
-
-        if (moveInput == 0 && isGrounded)
-        {
+        if (Mathf.Approximately(h, 0f) && isGrounded)
             rb.velocity = new Vector2(rb.velocity.x * 0.9f, rb.velocity.y);
-        }
 
         if (anim != null)
-        {
-            bool isMoving = Mathf.Abs(rb.velocity.x) > 0.1f;
-            anim.SetBool("1_Move", isMoving);
-        }
+            anim.SetBool("1_Move", Mathf.Abs(rb.velocity.x) > 0.1f);
     }
 
-    private void Flip()
+    void Flip()
     {
         isFacingRight = !isFacingRight;
-
         if (visualRoot != null)
         {
-            Vector3 scale = visualRoot.localScale;
-            scale.x *= -1;
-            visualRoot.localScale = scale;
+            var s = visualRoot.localScale;
+            s.x *= -1;
+            visualRoot.localScale = s;
         }
-
         UpdateAttackPointFacing();
     }
 
-    private void UpdateAttackPointFacing()
+    void UpdateAttackPointFacing()
     {
         if (attackPoint != null)
         {
-            Vector3 localPos = attackPoint.localPosition;
-            localPos.x = Mathf.Abs(attackOffsetX) * (isFacingRight ? 1 : -1);
-            attackPoint.localPosition = localPos;
+            var lp = attackPoint.localPosition;
+            lp.x = Mathf.Abs(attackOffsetX) * (isFacingRight ? 1 : -1);
+            attackPoint.localPosition = lp;
         }
     }
 
-    private void PlaySlashEffect()
+    void PlaySlashEffect()
     {
         if (hitEffectPrefab != null && attackPoint != null)
         {
-            GameObject effect = Instantiate(hitEffectPrefab, attackPoint.position, Quaternion.identity);
-            Vector3 scale = effect.transform.localScale;
-            scale.x = Mathf.Abs(scale.x) * (isFacingRight ? 1 : -1);
-            effect.transform.localScale = scale;
+            var fx = Instantiate(hitEffectPrefab, attackPoint.position, Quaternion.identity);
+            var s = fx.transform.localScale;
+            s.x = Mathf.Abs(s.x) * (isFacingRight ? 1 : -1);
+            fx.transform.localScale = s;
         }
     }
 
     public void DieAndRespawn()
     {
         if (isDead) return;
-
         isDead = true;
         rb.velocity = Vector2.zero;
+        if (anim != null) anim.SetBool("4_Death", true);
 
-        if (anim != null)
-        {
-            anim.SetBool("4_Death", true); //  修改这里的参数名
-       
-        }
-
-        float deathAnimDuration = 0.8f; // 根据你的动画 clip 长度调整
-        Invoke(nameof(Respawn), deathAnimDuration);
+        Invoke(nameof(Respawn), 0.8f);
     }
 
-
-
-    private void Respawn()
+    void Respawn()
     {
-        if (anim != null)
+        if (anim != null) anim.SetBool("4_Death", false);
+
+        if (respawnPoint == null)
         {
-            anim.SetBool("4_Death", false); //  改为匹配参数名
+            Debug.LogError("[PlayerMovement] 无可用 RespawnPoint，无法复活！");
+            return;
         }
 
-        // 重置位置和状态
         transform.position = respawnPoint.position;
-        transform.rotation = Quaternion.identity;
         rb.velocity = Vector2.zero;
         jumpCount = 0;
-
         GetComponent<PlayerHealthController>()?.ResetHealth();
-
         isDead = false;
     }
 
-
-
     void OnDrawGizmosSelected()
     {
-        if (groundCheck != null)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-        }
-    }
-
-    void OnDestroy()
-    {
-        PlayerHealthController health = GetComponent<PlayerHealthController>();
-        if (health != null)
-        {
-            health.OnPlayerDied -= DieAndRespawn;
-        }
+        var pos = (Vector2)transform.position + groundCheckOffset;
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(pos, groundCheckRadius);
     }
 }

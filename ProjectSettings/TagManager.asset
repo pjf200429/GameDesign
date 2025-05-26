@@ -3,7 +3,9 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Portal
+  - RespawnPoint
   layers:
   - Default
   - TransparentFX
@@ -12,12 +14,12 @@ TagManager:
   - Water
   - UI
   - Ground
-  - Enemy
-  - Player
+  - BackGround
   - Hitbox
   - Attack
-  - BackGround
-  - 
+  - Enemy
+  - Player
+  - Trigger
   - 
   - 
   - 
@@ -40,4 +42,25 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: 'BackgroundFar '
+    uniqueID: 638055531
+    locked: 0
+  - name: Platform
+    uniqueID: 190943871
+    locked: 0
+  - name: BackgroundNear
+    uniqueID: 355417171
+    locked: 0
+  - name: Character
+    uniqueID: 881495397
+    locked: 0
+  - name: 'Effects '
+    uniqueID: 344095757
+    locked: 0
+  - name: WorldUI
+    uniqueID: 1927558857
+    locked: 0
+  - name: MenuUI
+    uniqueID: 2564971649
     locked: 0

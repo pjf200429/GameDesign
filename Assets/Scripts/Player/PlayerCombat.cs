@@ -45,7 +45,7 @@ public class PlayerCombat : MonoBehaviour
                 spum.ATTACK_List.Clear();
                 spum.ATTACK_List.Add(attackClip);
                 spum.StateAnimationPairs["ATTACK"] = spum.ATTACK_List;
-                Debug.Log("<color=green>[PlayerCombat]</color> 手动设置 ATTACK 动画 clip 成功: " + attackClip.name);
+              
             }
             else
             {
