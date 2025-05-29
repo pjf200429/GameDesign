@@ -16,13 +16,11 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask groundLayer;
 
     [Header("Respawn")]
-    // 不手动拖：运行时自动根据场景中 Tag 查找
-    public Transform respawnPoint;
+    public Transform respawnPoint;  // Automatically finds the object tagged "RespawnPoint" after the scene is loaded
 
-    [Header("Attack")]
+    [Header("Attack Point (for PlayerCombat)")]
     public Transform attackPoint;
     public float attackOffsetX = 1f;
-    public GameObject hitEffectPrefab;
 
     [Header("Visuals")]
     public Transform visualRoot;
@@ -36,7 +34,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Awake()
     {
-        // 保证在场景加载后查找出生点
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -45,28 +42,10 @@ public class PlayerMovement : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    // 每次场景加载完成时回调
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        try
-        {
-            var go = GameObject.FindGameObjectWithTag("RespawnPoint");
-            if (go != null)
-            {
-                respawnPoint = go.transform;
-                Debug.Log($"[PlayerMovement] 在场景“{scene.name}”中找到 RespawnPoint");
-            }
-            else
-            {
-                respawnPoint = null;
-                Debug.Log($"[PlayerMovement] 场景“{scene.name}”中无 RespawnPoint，将无法复活");
-            }
-        }
-        catch (UnityException)
-        {
-            respawnPoint = null;
-            Debug.Log($"[PlayerMovement] 未定义 Tag “RespawnPoint”，跳过出生点查找");
-        }
+        var go = GameObject.FindGameObjectWithTag("RespawnPoint");
+        respawnPoint = go ? go.transform : null;
     }
 
     void Start()
@@ -74,7 +53,6 @@ public class PlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponentInChildren<Animator>();
 
-        // 初次面板朝向
         UpdateAttackPointFacing();
 
         var health = GetComponent<PlayerHealthController>();
@@ -86,14 +64,12 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isDead) return;
 
-        // 地面检测
+        // Ground check
         Vector2 checkPos = (Vector2)transform.position + groundCheckOffset;
         isGrounded = Physics2D.OverlapCircle(checkPos, groundCheckRadius, groundLayer);
+        if (isGrounded) jumpCount = 0;
 
-        if (isGrounded && jumpCount > 0)
-            jumpCount = 0;
-
-        // 跳跃
+        // Jump
         if (Input.GetKeyDown(KeyCode.Space) && jumpCount < maxJumps)
         {
             rb.velocity = new Vector2(rb.velocity.x, 0f);
@@ -101,13 +77,9 @@ public class PlayerMovement : MonoBehaviour
             jumpCount++;
         }
 
-        // 掉出死区
+        // Out of bounds (death zone)
         if (transform.position.y < deathY)
             DieAndRespawn();
-
-        // 测试特效
-        if (Input.GetKeyDown(KeyCode.K))
-            PlaySlashEffect();
     }
 
     void FixedUpdate()
@@ -118,12 +90,37 @@ public class PlayerMovement : MonoBehaviour
         if (h > 0 && !isFacingRight) Flip();
         else if (h < 0 && isFacingRight) Flip();
 
-        if (Mathf.Abs(rb.velocity.x) < maxSpeed || Mathf.Sign(h) != Mathf.Sign(rb.velocity.x))
-            rb.AddForce(Vector2.right * h * moveForce);
+        // —— Slope-based force calculation start ——  
+        // 1. Default horizontal force direction
+        Vector2 forceDir = Vector2.right * h;
 
+        // 2. Raycast downward from foot to get slope normal
+        Vector2 footPos = (Vector2)transform.position + groundCheckOffset;
+        RaycastHit2D slopeHit = Physics2D.Raycast(footPos, Vector2.down, groundCheckRadius * 2f, groundLayer);
+
+        if (slopeHit.collider != null && Mathf.Abs(h) > 0.01f)
+        {
+            // Slope tangent = normal rotated 90° clockwise
+            Vector2 slopeTangent = new Vector2(slopeHit.normal.y, -slopeHit.normal.x);
+            // Ensure tangent direction matches horizontal input
+            forceDir = slopeTangent * Mathf.Sign(Vector2.Dot(slopeTangent, Vector2.right * h));
+
+            // Debug visualization: draw green line for slope force direction
+            Debug.DrawRay(footPos, slopeTangent * 0.5f, Color.green);
+        }
+        // —— Slope-based force calculation end ——  
+
+        // Apply force if below max speed or changing direction
+        if (Mathf.Abs(rb.velocity.x) < maxSpeed || Mathf.Sign(h) != Mathf.Sign(rb.velocity.x))
+        {
+            rb.AddForce(forceDir.normalized * moveForce);
+        }
+
+        // Ground damping when no input
         if (Mathf.Approximately(h, 0f) && isGrounded)
             rb.velocity = new Vector2(rb.velocity.x * 0.9f, rb.velocity.y);
 
+        // Sync animation
         if (anim != null)
             anim.SetBool("1_Move", Mathf.Abs(rb.velocity.x) > 0.1f);
     }
@@ -150,17 +147,6 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    void PlaySlashEffect()
-    {
-        if (hitEffectPrefab != null && attackPoint != null)
-        {
-            var fx = Instantiate(hitEffectPrefab, attackPoint.position, Quaternion.identity);
-            var s = fx.transform.localScale;
-            s.x = Mathf.Abs(s.x) * (isFacingRight ? 1 : -1);
-            fx.transform.localScale = s;
-        }
-    }
-
     public void DieAndRespawn()
     {
         if (isDead) return;
@@ -174,13 +160,11 @@ public class PlayerMovement : MonoBehaviour
     void Respawn()
     {
         if (anim != null) anim.SetBool("4_Death", false);
-
         if (respawnPoint == null)
         {
-            Debug.LogError("[PlayerMovement] 无可用 RespawnPoint，无法复活！");
+            Debug.LogError("[PlayerMovement] No RespawnPoint found, cannot respawn!");
             return;
         }
-
         transform.position = respawnPoint.position;
         rb.velocity = Vector2.zero;
         jumpCount = 0;
@@ -190,8 +174,13 @@ public class PlayerMovement : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
+        // Original ground check circle
         var pos = (Vector2)transform.position + groundCheckOffset;
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(pos, groundCheckRadius);
+
+        // Visualize raycast for slope detection
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(pos, pos + Vector2.down * groundCheckRadius * 2f);
     }
 }

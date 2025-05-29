@@ -1,82 +1,70 @@
+// MeleeEnemy.cs
 using UnityEngine;
 
 public class MeleeEnemy : EnemyBase
 {
     private enum EnemyState { Patrolling, Chasing, Retreating }
+    private EnemyState enemyState = EnemyState.Patrolling;
 
     [Header("Movement Settings")]
     public float moveSpeed = 2f;
     public float detectionRange = 5f;
 
     [Header("Patrol Behavior")]
-    public float patrolRange = 3f;
     public float randomPatrolIntervalMin = 2f;
     public float randomPatrolIntervalMax = 5f;
 
-    [Header("Ground Check")]
-    public Transform groundCheck;
+    [Header("Ground Check (Local Offset)")]
+    public Vector2 groundCheckOffset = new Vector2(0f, -0.5f);
     public float groundCheckRadius = 0.4f;
     public LayerMask groundLayer;
 
     [Header("Visuals")]
     public Transform spriteHolder;
 
+    private bool isFacingRight;
+    private int patrolDir = 1;
+    private float nextChangeTime = 0f;
     private Transform player;
-    private Rigidbody2D rb;
-    private Vector3 startPosition;
-    private int patrolDirection = 1;
-
-    private float nextDirectionChangeTime = 0f;
-    private EnemyState currentState = EnemyState.Patrolling;
 
     protected override void Awake()
     {
         base.Awake();
-        rb = GetComponent<Rigidbody2D>();
-        startPosition = transform.position;
 
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-            player = playerObj.transform;
+        isFacingRight = spriteHolder != null && spriteHolder.localScale.x > 0;
+
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p != null) player = p.transform;
     }
 
-    private void FixedUpdate()
+    protected override bool ShouldMove()
     {
-        float distanceToPlayer = player != null ? Vector2.Distance(transform.position, player.position) : Mathf.Infinity;
+        if (player == null) return false;
+        return Vector2.Distance(transform.position, player.position) <= detectionRange;
+    }
 
-        switch (currentState)
+    protected override void PerformMovement()
+    {
+        float dist = player != null
+            ? Vector2.Distance(transform.position, player.position)
+            : Mathf.Infinity;
+
+        switch (enemyState)
         {
             case EnemyState.Patrolling:
-                if (distanceToPlayer <= detectionRange)
-                    currentState = EnemyState.Chasing;
-                else
-                    Patrol();
+                if (dist <= detectionRange) enemyState = EnemyState.Chasing;
+                else Patrol();
                 break;
 
             case EnemyState.Chasing:
-                if (distanceToPlayer > detectionRange)
-                {
-                    currentState = EnemyState.Patrolling;
-                }
-                else if (!IsGroundAhead())
-                {
-                    currentState = EnemyState.Retreating;
-                }
-                else
-                {
-                    ChasePlayer();
-                }
+                if (dist > detectionRange) enemyState = EnemyState.Patrolling;
+                else if (!IsGroundAhead()) enemyState = EnemyState.Retreating;
+                else Chase();
                 break;
 
             case EnemyState.Retreating:
-                if (distanceToPlayer > detectionRange)
-                {
-                    currentState = EnemyState.Patrolling;
-                }
-                else
-                {
-                    RetreatFromCliff();
-                }
+                if (dist > detectionRange) enemyState = EnemyState.Patrolling;
+                else Retreat();
                 break;
         }
     }
@@ -85,60 +73,62 @@ public class MeleeEnemy : EnemyBase
     {
         if (!IsGroundAhead())
         {
-            patrolDirection *= -1;
-            Flip(patrolDirection);
-            nextDirectionChangeTime = Time.time + Random.Range(randomPatrolIntervalMin, randomPatrolIntervalMax);
+            patrolDir *= -1;
+            TryFlip(patrolDir);
+            nextChangeTime = Time.time + Random.Range(randomPatrolIntervalMin, randomPatrolIntervalMax);
         }
 
-        if (Time.time >= nextDirectionChangeTime)
+        if (Time.time >= nextChangeTime)
         {
-            patrolDirection = Random.Range(0, 2) == 0 ? -1 : 1;
-            Flip(patrolDirection);
-            nextDirectionChangeTime = Time.time + Random.Range(randomPatrolIntervalMin, randomPatrolIntervalMax);
+            patrolDir = Random.value < .5f ? -1 : 1;
+            TryFlip(patrolDir);
+            nextChangeTime = Time.time + Random.Range(randomPatrolIntervalMin, randomPatrolIntervalMax);
         }
 
-        rb.velocity = new Vector2(patrolDirection * moveSpeed, rb.velocity.y);
+        rb.velocity = new Vector2(patrolDir * moveSpeed, rb.velocity.y);
     }
 
-    private void ChasePlayer()
+    private void Chase()
     {
-        Vector2 direction = (player.position - transform.position).normalized;
-        float targetVelocity = direction.x * moveSpeed;
-        rb.velocity = new Vector2(targetVelocity, rb.velocity.y);
-        Flip(direction.x);
+        Vector2 dir = (player.position - transform.position).normalized;
+        TryFlip((int)Mathf.Sign(dir.x));
+        rb.velocity = new Vector2(dir.x * moveSpeed, rb.velocity.y);
     }
 
-    private void RetreatFromCliff()
+    private void Retreat()
     {
-        // 反方向远离玩家
-        float direction = (player.position.x - transform.position.x) > 0 ? -1f : 1f;
-        rb.velocity = new Vector2(direction * moveSpeed, rb.velocity.y);
-        Flip(direction);
+        float dir = (player.position.x - transform.position.x) > 0 ? -1f : 1f;
+        TryFlip((int)dir);
+        rb.velocity = new Vector2(dir * moveSpeed, rb.velocity.y);
     }
 
     private bool IsGroundAhead()
     {
-        return groundCheck != null && Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        Vector2 checkPos = (Vector2)transform.position +
+            new Vector2(groundCheckOffset.x * patrolDir, groundCheckOffset.y);
+        return Physics2D.OverlapCircle(checkPos, groundCheckRadius, groundLayer);
     }
 
-    private void Flip(float direction)
+    private void TryFlip(int direction)
     {
+        if (direction > 0 && !isFacingRight) Flip();
+        else if (direction < 0 && isFacingRight) Flip();
+    }
+
+    private void Flip()
+    {
+        isFacingRight = !isFacingRight;
         if (spriteHolder != null)
         {
-            Vector3 scale = spriteHolder.localScale;
-            scale.x = direction > 0 ? 1 : -1;
-            spriteHolder.localScale = scale;
+            Vector3 s = spriteHolder.localScale;
+            s.x *= -1;
+            spriteHolder.localScale = s;
         }
     }
 
-    private void OnDrawGizmosSelected()
+    protected override void OnDamaged()
     {
-        if (groundCheck != null)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-        }
+        // 额外击退
+        rb.AddForce(Vector2.left * moveSpeed, ForceMode2D.Impulse);
     }
 }
-
-

@@ -6,26 +6,20 @@ public class MeleeAttack : IWeaponStrategy
     private int damage;
     private LayerMask targetLayers;
     private Vector2 offset;
-
-    private GameObject hitEffectPrefab;
-    private AudioClip attackSound;
-    private AudioSource audioSource;
-
     private float knockbackForce;
-    private bool isFacingRight = true; // 记录玩家朝向
+    private bool isFacingRight = true;
 
-    public MeleeAttack(float range, int damage, LayerMask targetLayers, Vector2 offset = default,
-                       GameObject hitEffectPrefab = null, AudioClip attackSound = null, AudioSource audioSource = null,
-                       float knockbackForce = 0f)
+    public MeleeAttack(
+        float range,
+        int damage,
+        LayerMask targetLayers,
+        Vector2 offset,
+        float knockbackForce)
     {
         this.range = range;
         this.damage = damage;
         this.targetLayers = targetLayers;
         this.offset = offset;
-
-        this.hitEffectPrefab = hitEffectPrefab;
-        this.attackSound = attackSound;
-        this.audioSource = audioSource;
         this.knockbackForce = knockbackForce;
     }
 
@@ -36,52 +30,28 @@ public class MeleeAttack : IWeaponStrategy
 
     public void Attack(Transform attackOrigin)
     {
+        // 计算打击中心
         Vector2 center = (Vector2)attackOrigin.position + offset;
-
-        if (hitEffectPrefab != null)
-        {
-            GameObject effect = GameObject.Instantiate(hitEffectPrefab, center, Quaternion.identity);
-
-            Vector3 scale = effect.transform.localScale;
-            scale.x = Mathf.Abs(scale.x) * (isFacingRight ? 1f : -1f);
-            effect.transform.localScale = scale;
-        }
-
-        if (attackSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(attackSound);
-        }
-
+        // 碰撞检测
         Collider2D[] hits = Physics2D.OverlapCircleAll(center, range, targetLayers);
-
         foreach (var hit in hits)
         {
-            IDamageable target = hit.GetComponent<IDamageable>();
-            if (target != null)
-            {
+            // 扣血
+            if (hit.TryGetComponent<IDamageable>(out var target))
                 target.TakeDamage(damage);
-            }
 
-            Rigidbody2D rb = hit.GetComponent<Rigidbody2D>();
-            if (rb != null)
+            // 击退
+            if (hit.TryGetComponent<Rigidbody2D>(out var rb))
             {
-                Vector2 hitDirection = ((Vector2)hit.transform.position - center).normalized;
-
-                // 模拟真实世界击退逻辑：考虑质量并限制最大速度
+                Vector2 dir = ((Vector2)hit.transform.position - center).normalized;
                 float massFactor = Mathf.Clamp(rb.mass, 1f, 5f);
-                float adjustedForce = knockbackForce / massFactor;
+                float force = knockbackForce / massFactor;
+                rb.AddForce(dir * force, ForceMode2D.Impulse);
 
-                rb.AddForce(hitDirection * adjustedForce, ForceMode2D.Impulse);
-
-                // 限制最大水平击退速度（避免击飞过远）
+                // 限制最大水平速度
                 if (Mathf.Abs(rb.velocity.x) > 10f)
-                {
                     rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * 10f, rb.velocity.y);
-                }
             }
         }
     }
 }
-
-
-
