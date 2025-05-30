@@ -3,118 +3,118 @@ using UnityEngine;
 
 public abstract class EnemyBase : MonoBehaviour, IDamageable
 {
-    protected EnemyHealthController healthController;
-    protected Rigidbody2D rb;
+    [Header("Attack Settings")]
+    public Transform attackPoint;        // 攻击检测挂点
+    public float attackCooldown = 1f;    // 攻击冷却
+    protected IWeaponStrategy attackStrategy;
+    private float _lastAttackTime = -999f;
 
     [Header("Animation (SPUM)")]
     public SPUM_Prefabs spum;
 
-    [Header("Fall Death Settings")]
+    [Header("Death Settings")]
     public float deathY = -10f;
 
-    protected bool isDead = false;
-
+    protected bool isDead;
     protected enum BaseState { Idle, Moving, Damaged, Dead }
     protected BaseState currentState = BaseState.Idle;
 
+    // 缓存组件引用
+    private EnemyHealthController _healthController;
+    protected Rigidbody2D rb;
+
     protected virtual void Awake()
     {
-        healthController = GetComponent<EnemyHealthController>();
+        _healthController = GetComponent<EnemyHealthController>();
         rb = GetComponent<Rigidbody2D>();
+        if (_healthController != null)
+            _healthController.OnEnemyDied += HandleDeath;
 
-        if (healthController != null)
-            healthController.OnEnemyDied += HandleDeath;
+        spum?.OverrideControllerInit();
+        InitializeAttackStrategy();
+    }
 
-        if (spum != null)
-            spum.OverrideControllerInit();
+    protected virtual void OnDestroy()
+    {
+        if (_healthController != null)
+            _healthController.OnEnemyDied -= HandleDeath;
     }
 
     protected virtual void Update()
     {
         if (isDead) return;
-
-        if (transform.position.y < deathY)
-        {
-            HandleDeath();
-            return;
-        }
+        if (transform.position.y < deathY) { HandleDeath(); return; }
 
         switch (currentState)
         {
-            case BaseState.Idle:
-                OnIdle();
-                break;
-            case BaseState.Moving:
-                OnMove();
-                break;
-            case BaseState.Damaged:
-                // 受击期间，子类可重写行为
-                break;
+            case BaseState.Idle: UpdateIdle(); break;
+            case BaseState.Moving: UpdateMoving(); break;
+            case BaseState.Damaged: /* 受击停顿 */   break;
         }
     }
 
-    protected virtual void OnIdle()
+    private void UpdateIdle()
     {
         PlayAnimation(PlayerState.IDLE);
-        if (ShouldMove())
-            ChangeState(BaseState.Moving);
+
+        if (CanAttack() && ShouldAttack())
+            TriggerAttack();
+        else if (ShouldMove())
+            currentState = BaseState.Moving;
     }
 
-    protected virtual void OnMove()
+    private void UpdateMoving()
     {
-        PerformMovement();
         PlayAnimation(PlayerState.MOVE);
+
+        if (CanAttack() && ShouldAttack())
+            TriggerAttack();
+        else
+            PerformMovement();
     }
 
-    public virtual void TakeDamage(int damage)
-    {
-        if (isDead) return;
+    private bool CanAttack() => Time.time - _lastAttackTime >= attackCooldown;
 
-        healthController?.TakeDamage(damage);
-        ChangeState(BaseState.Damaged);
+    private void TriggerAttack()
+    {
+        _lastAttackTime = Time.time;
+        PlayAnimation(PlayerState.ATTACK);
+    }
+
+    /// <summary>动画事件挂在此方法上，子类可 override 先传朝向</summary>
+    public virtual void OnAttackHitEvent()
+    {
+        attackStrategy?.Attack(attackPoint);
+    }
+
+    public virtual void TakeDamage(int dmg)
+    {
+        _healthController?.TakeDamage(dmg);
+        currentState = BaseState.Damaged;
         PlayAnimation(PlayerState.DAMAGED);
         Invoke(nameof(ResumeFromDamaged), 0.5f);
-
     }
 
     private void ResumeFromDamaged()
     {
         if (!isDead)
-            ChangeState(BaseState.Idle);
+            currentState = BaseState.Idle;
     }
 
-    protected virtual void HandleDeath()
+    protected void HandleDeath()
     {
         if (isDead) return;
-
         isDead = true;
-        ChangeState(BaseState.Dead);
         PlayAnimation(PlayerState.DEATH);
-
-        // 这里用一个固定延迟销毁，0.5 秒后 Destroy
         Destroy(gameObject, 0.5f);
     }
 
-    protected void ChangeState(BaseState newState)
-    {
-        currentState = newState;
-    }
+    protected void PlayAnimation(PlayerState st)
+        => spum?.PlayAnimation(st, 0);
 
-    protected void PlayAnimation(PlayerState animState)
-    {
-        if (spum != null)
-            spum.PlayAnimation(animState, 0);
-    }
-
-    protected virtual void OnDamaged() { }
-
-    protected virtual void OnDestroy()
-    {
-        if (healthController != null)
-            healthController.OnEnemyDied -= HandleDeath;
-    }
-
-    //—— 子类必须实现 ——//
+    // —— 子类必须实现 —— 
+    protected abstract void InitializeAttackStrategy();
+    protected abstract bool ShouldAttack();
     protected abstract bool ShouldMove();
     protected abstract void PerformMovement();
 }

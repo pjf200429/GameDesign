@@ -3,15 +3,17 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 
-public class PlayerHealthController : MonoBehaviour
+public class PlayerHealthController : MonoBehaviour, IDamageable
 {
+    [Header("Health Settings")]
     public Slider slider;
     public int maxHealth = 100;
     private int currentHealth;
 
+    [Header("UI Elements")]
     public TextMeshProUGUI healthText;
     public Image fillImage;
-    public Transform healthCanvas; // 血条 Canvas（World Space）
+    public Transform healthCanvas; // World-space canvas for the health bar
 
     public event Action OnPlayerDied;
 
@@ -23,34 +25,37 @@ public class PlayerHealthController : MonoBehaviour
 
     void Update()
     {
-        // Debug Key
+        // Debug: press H to take 10 damage
         if (Input.GetKeyDown(KeyCode.H))
-        {
             TakeDamage(10);
-        }
     }
 
     void LateUpdate()
     {
-        // 若需要防止旋转带来的倾斜（一般不会在 2D 情况下有问题），可以保留
+        // Keep the world-space health bar upright
         if (healthCanvas != null)
-        {
             healthCanvas.rotation = Quaternion.identity;
-        }
     }
 
+    /// <summary>
+    /// IDamageable 接口方法：被攻击时调用
+    /// </summary>
+    /// <param name="damage">受到的伤害值</param>
     public void TakeDamage(int damage)
     {
         currentHealth -= damage;
         currentHealth = Mathf.Max(currentHealth, 0);
+        Debug.Log("[Player] TakeDamage called with " + damage);
+
         UpdateHealthUI();
 
         if (currentHealth <= 0)
-        {
             OnPlayerDied?.Invoke();
-        }
     }
 
+    /// <summary>
+    /// 恢复生命
+    /// </summary>
     public void Heal(int amount)
     {
         currentHealth += amount;
@@ -58,6 +63,9 @@ public class PlayerHealthController : MonoBehaviour
         UpdateHealthUI();
     }
 
+    /// <summary>
+    /// 重置生命（通常在重生时调用）
+    /// </summary>
     public void ResetHealth()
     {
         currentHealth = maxHealth;
@@ -66,26 +74,20 @@ public class PlayerHealthController : MonoBehaviour
 
     private void UpdateHealthUI()
     {
-        float healthPercent = (float)currentHealth / maxHealth;
+        float percent = (float)currentHealth / maxHealth;
 
         slider.maxValue = 1f;
-        slider.value = healthPercent;
+        slider.value = percent;
 
         if (healthText != null)
-        {
-            healthText.text = currentHealth + " / " + maxHealth;
-        }
+            healthText.text = $"{currentHealth} / {maxHealth}";
 
         if (fillImage != null)
         {
-            Color targetColor = healthPercent > 0.5f
-                ? Color.Lerp(Color.yellow, Color.green, (healthPercent - 0.5f) / 0.5f)
-                : Color.Lerp(Color.red, Color.yellow, healthPercent / 0.5f);
-
-            fillImage.color = targetColor;
+            Color c = percent > 0.5f
+                ? Color.Lerp(Color.yellow, Color.green, (percent - 0.5f) * 2f)
+                : Color.Lerp(Color.red, Color.yellow, percent * 2f);
+            fillImage.color = c;
         }
     }
 }
-
-
-

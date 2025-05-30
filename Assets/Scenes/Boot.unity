@@ -236,10 +236,6 @@ PrefabInstance:
       propertyPath: matchingTables.Array.size
       value: 44
       objectReference: {fileID: 0}
-    - target: {fileID: 2332134074896865117, guid: 3d3cddfa68b2eb045a53e3ec066d2e1b, type: 3}
-      propertyPath: m_PresetInfoIsWorld
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 6019255632734193481, guid: 3d3cddfa68b2eb045a53e3ec066d2e1b, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0

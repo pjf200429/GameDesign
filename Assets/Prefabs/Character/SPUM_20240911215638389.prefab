@@ -4355,6 +4355,18 @@ MonoBehaviour:
     Color:
       serializedVersion: 2
       rgba: 4294967295
+  - UnitType: 
+    PartType: 
+    PartSubType: 
+    Index: 0
+    Dir: 
+    Structure: 
+    ItemPath: 
+    MaskIndex: 0
+    renderer: {fileID: 0}
+    Color:
+      serializedVersion: 2
+      rgba: 0
 --- !u!1 &7963484206709889993
 GameObject:
   m_ObjectHideFlags: 0
