@@ -60,6 +60,33 @@ public class PlayerCombat : MonoBehaviour
 
         // 更新特效控制器
         effectController.SetCurrentWeapon(item);
+
+        // —— 新增：把 R_Weapon 节点的 Sprite 换成 item.Icon —— 
+        // 假设 spum.gameObject 就是 SPUM 整棵预制体的根节点
+        Transform rootTransform = spum.gameObject.transform;
+        // 在 SPUM 预制体下找到 “UnitRoot/Root/BodySet/P_Body/ArmSet/ArmR/P_RArm/P_Weapon/R_Weapon”
+        Transform rWeaponTf = rootTransform.Find(
+            "UnitRoot/Root/BodySet/P_Body/ArmSet/ArmR/P_RArm/P_Weapon/R_Weapon"
+        );
+
+        if (rWeaponTf != null)
+        {
+            SpriteRenderer sr = rWeaponTf.GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                // 将 R_Weapon 的 Sprite 换成 item.Icon
+                sr.sprite = item.Icon;
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerCombat] 找到 R_Weapon，但是没有 SpriteRenderer 组件，请检查层级或组件。");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerCombat] 未能在 SPUM 下找到 R_Weapon 节点，请确认路径是否正确：" +
+                             "UnitRoot/Root/BodySet/P_Body/ArmSet/ArmR/P_RArm/P_Weapon/R_Weapon");
+        }
     }
 
     void Update()
@@ -103,8 +130,6 @@ public class PlayerCombat : MonoBehaviour
     /// </summary>
     public void OnAttackHitEvent()
     {
-      //  Debug.Log($"[PlayerCombat] OnAttackHitEvent fired! FacingRight={isFacingRight}, currentWeapon={(currentWeapon == null ? "null" : currentWeapon.GetType().Name)}");
-
         // 1) 更新朝向
         if (currentWeapon is MeleeAttack melee)
         {

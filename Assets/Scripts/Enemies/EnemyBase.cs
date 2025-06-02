@@ -47,9 +47,15 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
 
         switch (currentState)
         {
-            case BaseState.Idle: UpdateIdle(); break;
-            case BaseState.Moving: UpdateMoving(); break;
-            case BaseState.Damaged: /* 受击停顿 */   break;
+            case BaseState.Idle:
+                UpdateIdle();
+                break;
+            case BaseState.Moving:
+                UpdateMoving();
+                break;
+            case BaseState.Damaged:
+                // 受击停顿
+                break;
         }
     }
 
@@ -81,7 +87,9 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         PlayAnimation(PlayerState.ATTACK);
     }
 
-    /// <summary>动画事件挂在此方法上，子类可 override 先传朝向</summary>
+    /// <summary>
+    /// Animation Event 挂在此方法上，子类可 override 先传朝向
+    /// </summary>
     public virtual void OnAttackHitEvent()
     {
         attackStrategy?.Attack(attackPoint);

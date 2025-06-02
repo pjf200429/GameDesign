@@ -1,3 +1,4 @@
+// EnemyHealthController.cs
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -24,10 +25,14 @@ public class EnemyHealthController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.K))
         {
+            // 调试用：按 K 键模拟一次最大生命值的 1/5 的伤害
             TakeDamage(maxHealth / 5);
         }
     }
 
+    /// <summary>
+    /// 被扣血时调用，此处直接扣减“传入的”damage，不再做其它减免
+    /// </summary>
     public void TakeDamage(int damage)
     {
         currentHealth -= damage;
@@ -50,8 +55,11 @@ public class EnemyHealthController : MonoBehaviour
     {
         float healthPercent = (float)currentHealth / maxHealth;
 
-        slider.maxValue = 1f;
-        slider.value = healthPercent;
+        if (slider != null)
+        {
+            slider.maxValue = 1f;
+            slider.value = healthPercent;
+        }
 
         if (healthText != null)
         {

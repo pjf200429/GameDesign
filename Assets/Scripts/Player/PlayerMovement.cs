@@ -1,12 +1,15 @@
+// PlayerMovement.cs
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour
 {
+    // 这三个参数不再在 Inspector 中手动设置，而是从 PlayerAttributes 自动读取
+    private float moveForce;
+    private float maxSpeed;
+    private float jumpForce;
+
     [Header("Movement Settings")]
-    public float moveForce = 50f;
-    public float maxSpeed = 5f;
-    public float jumpForce = 6f;
     public int maxJumps = 2;
     public float deathY = -10f;
 
@@ -16,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask groundLayer;
 
     [Header("Respawn")]
-    public Transform respawnPoint;  // Automatically finds the object tagged "RespawnPoint" after the scene is loaded
+    public Transform respawnPoint;  // 场景加载后通过 Tag 自动赋值
 
     [Header("Attack Point (for PlayerCombat)")]
     public Transform attackPoint;
@@ -25,12 +28,14 @@ public class PlayerMovement : MonoBehaviour
     [Header("Visuals")]
     public Transform visualRoot;
 
-    Rigidbody2D rb;
-    Animator anim;
-    int jumpCount;
-    bool isGrounded;
-    bool isFacingRight = true;
-    bool isDead = false;
+    private Rigidbody2D rb;
+    private Animator anim;
+    private PlayerAttributes playerAttributes;
+
+    private int jumpCount;
+    private bool isGrounded;
+    private bool isFacingRight = true;
+    private bool isDead = false;
 
     void Awake()
     {
@@ -52,6 +57,25 @@ public class PlayerMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponentInChildren<Animator>();
+        playerAttributes = GetComponent<PlayerAttributes>();
+        if (playerAttributes == null)
+        {
+            Debug.LogError("[PlayerMovement] 找不到 PlayerAttributes，请确保挂载在同一 GameObject 上。");
+            return;
+        }
+
+        // 1. 最大水平速度
+        maxSpeed = playerAttributes.MovementSpeed;
+
+        // 2. 根据属性中的 JumpHeight 及刚体的 gravityScale 计算跳跃冲量
+        float globalGravityY = Physics2D.gravity.y;                            // 通常 = -9.81
+        float actualG = Mathf.Abs(globalGravityY) * rb.gravityScale;            // 实际重力加速度
+        float desiredHeight = playerAttributes.JumpHeight;                      // 想要跳到的高度
+        float v0 = Mathf.Sqrt(2f * actualG * desiredHeight);                    // 反算初速度
+        jumpForce = rb.mass * v0;                                               // 冲量 = 质量 × 初速度
+
+        // 3. 计算水平推力
+        moveForce = maxSpeed * 10f;   // 举例：maxSpeed × 10 可快速达到速度上限
 
         UpdateAttackPointFacing();
 
@@ -70,7 +94,7 @@ public class PlayerMovement : MonoBehaviour
         if (isGrounded) jumpCount = 0;
 
         // Jump
-        if (Input.GetKeyDown(KeyCode.Space) && jumpCount < maxJumps)
+        if (Input.GetKeyDown(KeyCode.Space) && jumpCount < maxJumps - 1)
         {
             rb.velocity = new Vector2(rb.velocity.x, 0f);
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
@@ -91,36 +115,26 @@ public class PlayerMovement : MonoBehaviour
         else if (h < 0 && isFacingRight) Flip();
 
         // —— Slope-based force calculation start ——  
-        // 1. Default horizontal force direction
         Vector2 forceDir = Vector2.right * h;
-
-        // 2. Raycast downward from foot to get slope normal
         Vector2 footPos = (Vector2)transform.position + groundCheckOffset;
         RaycastHit2D slopeHit = Physics2D.Raycast(footPos, Vector2.down, groundCheckRadius * 2f, groundLayer);
 
         if (slopeHit.collider != null && Mathf.Abs(h) > 0.01f)
         {
-            // Slope tangent = normal rotated 90° clockwise
             Vector2 slopeTangent = new Vector2(slopeHit.normal.y, -slopeHit.normal.x);
-            // Ensure tangent direction matches horizontal input
             forceDir = slopeTangent * Mathf.Sign(Vector2.Dot(slopeTangent, Vector2.right * h));
-
-            // Debug visualization: draw green line for slope force direction
             Debug.DrawRay(footPos, slopeTangent * 0.5f, Color.green);
         }
         // —— Slope-based force calculation end ——  
 
-        // Apply force if below max speed or changing direction
         if (Mathf.Abs(rb.velocity.x) < maxSpeed || Mathf.Sign(h) != Mathf.Sign(rb.velocity.x))
         {
             rb.AddForce(forceDir.normalized * moveForce);
         }
 
-        // Ground damping when no input
         if (Mathf.Approximately(h, 0f) && isGrounded)
             rb.velocity = new Vector2(rb.velocity.x * 0.9f, rb.velocity.y);
 
-        // Sync animation
         if (anim != null)
             anim.SetBool("1_Move", Mathf.Abs(rb.velocity.x) > 0.1f);
     }
@@ -174,12 +188,10 @@ public class PlayerMovement : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        // Original ground check circle
         var pos = (Vector2)transform.position + groundCheckOffset;
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(pos, groundCheckRadius);
 
-        // Visualize raycast for slope detection
         Gizmos.color = Color.green;
         Gizmos.DrawLine(pos, pos + Vector2.down * groundCheckRadius * 2f);
     }
