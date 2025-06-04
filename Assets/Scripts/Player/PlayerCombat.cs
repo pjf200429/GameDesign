@@ -41,53 +41,121 @@ public class PlayerCombat : MonoBehaviour
             return;
         }
 
-        WeaponData data = item.WeaponData;
-        Debug.Log($"[PlayerCombat] 装备武器: {data.WeaponID}");
+        // 拿到通用的 EquipmentData
+        var data = item.Data;
 
-        // 切换动画剪辑
-        spum.ATTACK_List.Clear();
-        spum.ATTACK_List.Add(data.AttackAnimation);
-        spum.StateAnimationPairs["ATTACK"] = spum.ATTACK_List;
-
-        // 更新打击逻辑
-        currentWeapon = new MeleeAttack(
-            data.AttackRange,
-            data.Damage,
-            enemyLayers,
-            data.Offset,
-            data.KnockbackForce
-        );
-
-        // 更新特效控制器
-        effectController.SetCurrentWeapon(item);
-
-        // —— 新增：把 R_Weapon 节点的 Sprite 换成 item.Icon —— 
-        // 假设 spum.gameObject 就是 SPUM 整棵预制体的根节点
-        Transform rootTransform = spum.gameObject.transform;
-        // 在 SPUM 预制体下找到 “UnitRoot/Root/BodySet/P_Body/ArmSet/ArmR/P_RArm/P_Weapon/R_Weapon”
-        Transform rWeaponTf = rootTransform.Find(
-            "UnitRoot/Root/BodySet/P_Body/ArmSet/ArmR/P_RArm/P_Weapon/R_Weapon"
-        );
-
-        if (rWeaponTf != null)
+        // 如果是武器（WeaponData），执行原有的切换武器逻辑
+        if (data is WeaponData weaponData)
         {
-            SpriteRenderer sr = rWeaponTf.GetComponent<SpriteRenderer>();
-            if (sr != null)
+            Debug.Log($"[PlayerCombat] 装备武器: {weaponData.EquipmentID}");
+
+            // 切换动画剪辑
+            spum.ATTACK_List.Clear();
+            spum.ATTACK_List.Add(weaponData.AttackAnimation);
+            spum.StateAnimationPairs["ATTACK"] = spum.ATTACK_List;
+
+            // 更新打击逻辑
+            currentWeapon = new MeleeAttack(
+                weaponData.AttackRange,
+                weaponData.Damage,
+                enemyLayers,
+                weaponData.Offset,
+                weaponData.KnockbackForce
+            );
+
+            // 更新特效控制器
+            effectController.SetCurrentWeapon(item);
+
+            // —— 把 R_Weapon 节点的 Sprite 换成 item.Icon —— 
+            Transform rootTransform = spum.gameObject.transform;
+            Transform rWeaponTf = rootTransform.Find(
+                "UnitRoot/Root/BodySet/P_Body/ArmSet/ArmR/P_RArm/P_Weapon/R_Weapon"
+            );
+            if (rWeaponTf != null)
             {
-                // 将 R_Weapon 的 Sprite 换成 item.Icon
-                sr.sprite = item.Icon;
+                var sr = rWeaponTf.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sprite = item.Icon;
+                else
+                    Debug.LogWarning("[PlayerCombat] 找到 R_Weapon 但没有 SpriteRenderer。");
             }
             else
             {
-                Debug.LogWarning("[PlayerCombat] 找到 R_Weapon，但是没有 SpriteRenderer 组件，请检查层级或组件。");
+                Debug.LogWarning("[PlayerCombat] 未能找到 R_Weapon 节点，路径可能不正确。");
             }
+        }
+        // 如果是护甲（ArmorData）
+        else if (data is ArmorData armorData)
+        {
+            Debug.Log($"[PlayerCombat] 装备护甲: {armorData.EquipmentID}");
+
+            // 1) 更新玩家防御属性
+            var attrs = GetComponentInParent<PlayerAttributes>();
+            if (attrs != null)
+            {
+                Debug.Log($"[PlayerCombat] 准备 SetArmorDefense({armorData.DefenseValue})");
+                attrs.SetArmorDefense(armorData.DefenseValue);
+            }
+
+            // 2) 替换模型中护甲的 Sprite
+            Transform rootTransform = spum.gameObject.transform;
+            Transform bodyArmorTf = rootTransform.Find(
+                "UnitRoot/Root/BodySet/P_Body/Body/P_ArmorBody/BodyArmor"
+            );
+            if (bodyArmorTf != null)
+            {
+                var sr = bodyArmorTf.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sprite = armorData.Icon;
+                else
+                    Debug.LogWarning("[PlayerCombat] 找到 BodyArmor 但没有 SpriteRenderer。");
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerCombat] 未能找到 BodyArmor 节点，路径可能不正确。");
+            }
+
+        }
+        // 如果是头盔（HelmetData）
+        else if (data is HelmetData helmetData)
+        {
+            Debug.Log($"[PlayerCombat] 装备头盔: {helmetData.EquipmentID}");
+
+            // 1) 更新玩家头盔防御属性
+            var attrs = GetComponentInParent<PlayerAttributes>();
+            if (attrs != null)
+            {
+                Debug.Log($"[PlayerCombat] 准备 SetArmorDefense({helmetData.DefenseValue})");
+                attrs.SetHelmetDefense(helmetData.DefenseValue);
+            }
+
+            // 2) 替换模型中头盔的 Sprite
+            Transform rootTransform = spum.gameObject.transform;
+            Transform helmetTf = rootTransform.Find(
+                "UnitRoot/Root/BodySet/P_Body/HeadSet/P_Head/P_Helmet/11_Helmet1"
+            );
+            if (helmetTf != null)
+            {
+                var sr = helmetTf.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sprite = helmetData.Icon;
+                else
+                    Debug.LogWarning("[PlayerCombat] 找到 11_Helmet1 但没有 SpriteRenderer。");
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerCombat] 未能找到 11_Helmet1 节点，路径可能不正确。");
+            }
+
+            // （可选）如果只戴头盔不影响武器逻辑，则保持 currentWeapon 不变
         }
         else
         {
-            Debug.LogWarning("[PlayerCombat] 未能在 SPUM 下找到 R_Weapon 节点，请确认路径是否正确：" +
-                             "UnitRoot/Root/BodySet/P_Body/ArmSet/ArmR/P_RArm/P_Weapon/R_Weapon");
+            Debug.LogWarning($"[PlayerCombat] 不支持的装备类型: {data.GetType().Name}");
         }
     }
+
+
 
     void Update()
     {

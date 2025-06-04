@@ -1,17 +1,17 @@
-// PlayerMovement.cs
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour
 {
-    // 这三个参数不再在 Inspector 中手动设置，而是从 PlayerAttributes 自动读取
+
     private float moveForce;
     private float maxSpeed;
     private float jumpForce;
 
     [Header("Movement Settings")]
     public int maxJumps = 2;
-    public float deathY = -10f;
+    public float deathY = -200f;
 
     [Header("Ground Check (Local Offset)")]
     public Vector2 groundCheckOffset = new Vector2(0f, -0.5f);
@@ -19,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask groundLayer;
 
     [Header("Respawn")]
-    public Transform respawnPoint;  // 场景加载后通过 Tag 自动赋值
+    public Transform respawnPoint; 
 
     [Header("Attack Point (for PlayerCombat)")]
     public Transform attackPoint;
@@ -75,7 +75,7 @@ public class PlayerMovement : MonoBehaviour
         jumpForce = rb.mass * v0;                                               // 冲量 = 质量 × 初速度
 
         // 3. 计算水平推力
-        moveForce = maxSpeed * 10f;   // 举例：maxSpeed × 10 可快速达到速度上限
+        moveForce = maxSpeed * 10f;   
 
         UpdateAttackPointFacing();
 

@@ -1,15 +1,8 @@
-// WeaponData.cs
-// 配置数据：各武器的参数、特效、音效、动画等
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Item/WeaponData")]
-public class WeaponData : ScriptableObject
+public class WeaponData : EquipmentData
 {
-    [Header("基础信息")]
-    public string WeaponID;                    // 唯一标识
-    public string DisplayName;                 // 显示用名称
-    public Sprite Icon;                        // UI 图标
-
     [Header("攻击属性")]
     public int Damage;                         // 伤害值
     public float AttackInterval;               // 攻击间隔（秒）
@@ -18,7 +11,7 @@ public class WeaponData : ScriptableObject
     public float KnockbackForce;               // 击退力度
 
     [Header("动画")]
-    public AnimationClip AttackAnimation;      // 攻击动作剪辑
+    public AnimationClip AttackAnimation;      // 攻击动画剪辑
 
     [Header("打击特效")]
     public GameObject effectPrefab;            // 命中特效 Prefab
@@ -27,4 +20,6 @@ public class WeaponData : ScriptableObject
 
     [Header("打击音效")]
     public AudioClip attackSound;              // 播放的音效
+
+   
 }

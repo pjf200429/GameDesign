@@ -23,6 +23,14 @@ public class ConsumableItem : ItemBase
     /// <summary>
     /// 构造一个新的 ConsumableItem 实例，初始数量为 1
     /// </summary>
+    /// <param name="itemId">唯一 ID</param>
+    /// <param name="displayName">显示名称</param>
+    /// <param name="icon">图标</param>
+    /// <param name="healAmount">回血量</param>
+    /// <param name="buffType">Buff 类型</param>
+    /// <param name="buffDuration">Buff 持续时长（秒）</param>
+    /// <param name="buffValue">Buff 数值</param>
+    /// <param name="price">价格</param>
     public ConsumableItem(
         string itemId,
         string displayName,
@@ -30,11 +38,10 @@ public class ConsumableItem : ItemBase
         int healAmount,
         BuffType buffType,
         float buffDuration,
-        float buffValue)
+        float buffValue,
+        int price            // 新增 price 参数
+    ) : base(itemId, displayName, icon, price)
     {
-        ItemID = itemId;
-        DisplayName = displayName;
-        Icon = icon;
         HealAmount = healAmount;
         BuffType = buffType;
         BuffDuration = buffDuration;
@@ -78,7 +85,8 @@ public class ConsumableItem : ItemBase
             }
         }
 
-      
+        // 3) 使用后减少数量（外部代码需要在数量为 0 时移除实例）
+        ReduceQuantity(1);
     }
 
     /// <summary>

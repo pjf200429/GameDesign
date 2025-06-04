@@ -277,6 +277,7 @@ GameObject:
   - component: {fileID: 297971790}
   - component: {fileID: 297971789}
   - component: {fileID: 297971791}
+  - component: {fileID: 297971792}
   m_Layer: 0
   m_Name: Gamemanager
   m_TagString: Untagged
@@ -349,6 +350,25 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 945b026ee8922dc47b24bfa2b85089c4, type: 2}
   - {fileID: 11400000, guid: e913e0e1fe76c074589fc48c6be49fed, type: 2}
   - {fileID: 11400000, guid: ab21b243100fcd342995c1dfeddc4930, type: 2}
+  AllHelmets:
+  - {fileID: 11400000, guid: 2278e69554f2d684a8fe0c468b2fdba3, type: 2}
+  - {fileID: 11400000, guid: a6ee998963869c34aad59c843ffa79bd, type: 2}
+  AllArmors:
+  - {fileID: 11400000, guid: 740552d81d66d9e46b3a979fc18f1d63, type: 2}
+  - {fileID: 11400000, guid: 4314cde68d511ee409f9743d47ac64c5, type: 2}
+--- !u!114 &297971792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 297971787}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46861cf8e472e51438cb9f7c848caed5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemCount: 4
 --- !u!1 &448941365
 GameObject:
   m_ObjectHideFlags: 0
@@ -552,6 +572,10 @@ PrefabInstance:
     - target: {fileID: 7456759904972405013, guid: 3d3cddfa68b2eb045a53e3ec066d2e1b, type: 3}
       propertyPath: m_Radius
       value: 0.26
+      objectReference: {fileID: 0}
+    - target: {fileID: 7903552153921486804, guid: 3d3cddfa68b2eb045a53e3ec066d2e1b, type: 3}
+      propertyPath: deathY
+      value: -200
       objectReference: {fileID: 0}
     - target: {fileID: 8895126512435727022, guid: 3d3cddfa68b2eb045a53e3ec066d2e1b, type: 3}
       propertyPath: m_Name

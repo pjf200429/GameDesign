@@ -14,20 +14,18 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
     public Image fillImage;
     public Transform healthCanvas; // World-space canvas for the health bar
 
-    // 引用玩家属性脚本，从中获取最大生命值和防御力
     private PlayerAttributes playerAttributes;
 
     public event Action OnPlayerDied;
 
     void Awake()
     {
-        // 尝试获取挂在同一 GameObject 上或子物体上的 PlayerAttributes
+     
         playerAttributes = GetComponent<PlayerAttributes>();
         if (playerAttributes == null)
             playerAttributes = GetComponentInChildren<PlayerAttributes>();
 
-        if (playerAttributes == null)
-            Debug.LogError("[PlayerHealthController] 未找到 PlayerAttributes，请确保它挂载在玩家对象上。");
+     
     }
 
     void Start()
@@ -39,7 +37,7 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
         }
         else
         {
-            currentHealth = 100; // 作为后备值
+            currentHealth = 100; 
         }
 
         UpdateHealthUI();
@@ -47,14 +45,11 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
 
     void Update()
     {
-        // 调试：按 H 键受到 10 点伤害
-        if (Input.GetKeyDown(KeyCode.H))
-            TakeDamage(10);
+       
     }
 
     void LateUpdate()
     {
-        // 保持世界空间血条始终朝向相机
         if (healthCanvas != null)
             healthCanvas.rotation = Quaternion.identity;
     }
@@ -72,7 +67,7 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
         }
 
         // 计算减少量：防御力 * 0.2，再向下取整
-        int reduction = Mathf.FloorToInt(playerAttributes.Defense * 0.2f);
+        int reduction = Mathf.FloorToInt((playerAttributes.ArmorDefense + playerAttributes.HelmetDefense) * playerAttributes.DefenseMultiplier);
         int effectiveDamage = damage - reduction;
         if (effectiveDamage < 0) effectiveDamage = 0;
 
@@ -118,7 +113,6 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
         float maxH = playerAttributes.MaxHealth;
         float percent = (float)currentHealth / maxH;
 
-        // 将 Slider 的值规范化到 0-1 的区间
         slider.maxValue = 1f;
         slider.value = percent;
 

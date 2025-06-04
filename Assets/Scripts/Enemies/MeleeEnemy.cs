@@ -12,10 +12,10 @@ public class MeleeEnemy : EnemyBase
     public float patrolIntervalMax = 5f;
 
     [Header("Ground & Obstacle Check")]
-    public Vector2 groundCheckOffset = Vector2.down * 0.5f; // 地面检测偏移
-    public float groundCheckRadius = 0.2f;                   // 地面检测半径
-    public float obstacleCheckDistance = 0.5f;               // 前方障碍射线长度
-    public LayerMask groundLayer;                            // 地面和障碍所在层
+    public Vector2 groundCheckOffset = Vector2.down * 0.5f;
+    public float groundCheckRadius = 0.2f;
+    public float obstacleCheckDistance = 0.5f;
+    public LayerMask groundLayer;
 
     [Header("Melee Attack Data")]
     public float attackRange = 1.5f;
@@ -25,11 +25,11 @@ public class MeleeEnemy : EnemyBase
     public float knockbackForce = 5f;
 
     [Header("Defensive Data")]
-    [Tooltip("敌人的防御力，用于伤害减免 (减免量 = floor(defense × 0.2))")]
+    [Tooltip("Enemy defense for damage reduction (reduction = floor(defense * 0.2))")]
     public int defense = 0;
 
     [Header("Jump Settings")]
-    public float jumpForce = 5f; // 跳跃力度
+    public float jumpForce = 5f;
 
     [Header("Visuals")]
     public Transform spriteHolder;
@@ -38,9 +38,13 @@ public class MeleeEnemy : EnemyBase
     private bool _facingRight;
     private int _patrolDir = 1;
     private float _nextPatrolTime;
-
-    // 当前是否在地面上
     private bool isGrounded;
+
+    private void Reset()
+    {
+        // Default gold drop for this type of enemy
+        goldDrop = 10;
+    }
 
     protected override void Awake()
     {
@@ -65,8 +69,8 @@ public class MeleeEnemy : EnemyBase
     {
         if (_player == null) return false;
         float dx = _player.position.x - transform.position.x;
-        bool inDir = _facingRight ? dx >= 0 : dx <= 0;
-        return inDir && Mathf.Abs(dx) <= attackRange;
+        bool inFacingDirection = _facingRight ? dx >= 0 : dx <= 0;
+        return inFacingDirection && Mathf.Abs(dx) <= attackRange;
     }
 
     protected override bool ShouldMove()
@@ -84,27 +88,21 @@ public class MeleeEnemy : EnemyBase
             return;
         }
 
-        // —— 更新地面检测 —— 
         Vector2 groundCheckPos = (Vector2)transform.position + groundCheckOffset;
         isGrounded = Physics2D.OverlapCircle(groundCheckPos, groundCheckRadius, groundLayer);
 
         float dist = Vector2.Distance(transform.position, _player.position);
 
-        // 1) 玩家在近战攻击范围：停下并切回 Idle
         if (ShouldAttack())
         {
             rb.velocity = new Vector2(0f, rb.velocity.y);
             currentState = BaseState.Idle;
         }
-        // 2) 玩家在感知范围内且不在近战范围：执行追击/跳跃
         else if (dist <= detectionRange)
         {
-            // 先计算水平方向
             float dirX = (_player.position.x - transform.position.x) >= 0 ? 1f : -1f;
-            // 翻转朝向
             FlipIfNeeded(dirX);
 
-            // 检测前方是否有障碍
             Vector2 rayOrigin = (Vector2)transform.position + new Vector2(_facingRight ? 0.1f : -0.1f, 0f);
             RaycastHit2D hit = Physics2D.Raycast(
                 rayOrigin,
@@ -115,15 +113,12 @@ public class MeleeEnemy : EnemyBase
 
             if (hit.collider != null && isGrounded)
             {
-                // 前方有障碍并且在地面上 → 跳跃
                 rb.velocity = new Vector2(rb.velocity.x, 0f);
                 rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
             }
 
-            // 水平追击
             rb.velocity = new Vector2(dirX * moveSpeed, rb.velocity.y);
         }
-        // 3) 玩家脱离感知范围：巡逻
         else
         {
             Patrol();
@@ -159,7 +154,7 @@ public class MeleeEnemy : EnemyBase
         }
     }
 
-    // 重写，为了传递正确朝向给攻击策略
+    // Override to pass the correct facing direction to the attack strategy
     public override void OnAttackHitEvent()
     {
         if (attackStrategy is MeleeAttackStrategy melee)
@@ -167,18 +162,16 @@ public class MeleeEnemy : EnemyBase
         base.OnAttackHitEvent();
     }
 
-    // 重写 TakeDamage：先用 defense 做一次伤害减免，再调用基类把剩余伤害传给 HealthController
+    // Override TakeDamage: apply defense reduction, then call base implementation
     public override void TakeDamage(int dmg)
     {
-        // —— 1. 先计算防御减免量 —— 
         int reduction = Mathf.FloorToInt(defense * 0.2f);
         int effectiveDamage = dmg - reduction;
         if (effectiveDamage < 0) effectiveDamage = 0;
 
-        // —— 2. 调用基类逻辑：基类会把剩余伤害传给 EnemyHealthController 来扣血，并播放受伤动画等
         base.TakeDamage(effectiveDamage);
 
-        // —— 3. （可选）受击后加一个后退冲量
+        // Optional: add knockback when damaged
         rb.AddForce(Vector2.left * moveSpeed, ForceMode2D.Impulse);
     }
 }

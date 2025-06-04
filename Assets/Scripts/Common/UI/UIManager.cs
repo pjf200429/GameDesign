@@ -1,30 +1,27 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 全局唯一的 UI 管理器 (UIManager)：
-/// 1. 在 Awake() 时调用 DontDestroyOnLoad(this.gameObject)，让自己及所有子节点保持常驻；
-/// 2. 默认隐藏 InventoryCanvas，只有收到 Toggle/On/Off 调用时才显示或关闭；
-/// 3. 提供三种接口：ToggleInventory(), OpenInventory(), CloseInventory()；
-///
-/// 使用步骤：
-/// - 在场景里创建一个空 GameObject，命名为 "UIManager"，把本脚本挂在它上面；
-/// - 确认 UIManager 是 BootRoot 的子节点（BootRoot 也调用了 DontDestroyOnLoad）；
-/// - 在 Inspector 中把 InventoryCanvas（包含 InventoryPanel → SlotGridArea）拖到 inventoryCanvas 字段；
-/// - 之后可在按键监听或按钮事件里直接调用 UIManager.Instance.ToggleInventory() 来切换背包显示/隐藏；
-/// - 如果需要单独打开/关闭，也可分别调用 UIManager.Instance.OpenInventory() / CloseInventory()。  
+/// 1. 管理背包面板的打开/关闭；
+/// 2. 管理商店主面板（ShopCanvas）的打开/关闭，但不管商店内部逻辑；
+/// 3. 在切换到 ShopRoom 场景时，自动查找并缓存 ShopCanvas，当离开该场景时隐藏并置空；  
 /// </summary>
 public class UIManager : MonoBehaviour
 {
-    // 单例实例
+    // 单例
     public static UIManager Instance { get; private set; }
 
-   
+    [Header("背包面板（在 Inspector 中赋值）")]
     public GameObject inventoryCanvas;
 
-    // 如果后续需要管理其它常驻 UI 面板，比如设置面板、对话框面板，可以在这里再添加字段：
-    // public GameObject settingsCanvas;
-    // public GameObject dialogueCanvas;
-    // ……等等
+    // 商店主 Canvas（在 ShopRoom 场景加载时动态查找，无需在 Inspector 赋值）
+    private GameObject shopCanvas;
+
+    // “商店场景” 的名字一定要和下面常量一致
+    private const string SHOP_SCENE_NAME = "ShopRoom";
+    // “商店面板” 的根 GameObject 名称必须和下面常量一致
+    private const string SHOP_CANVAS_NAME = "ShopCanvas";
 
     private void Awake()
     {
@@ -32,77 +29,145 @@ public class UIManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // 保证自己及所有子节点在切换场景时不被销毁
-          
+           
 
-            // 确保 inventoryCanvas 已被赋值
+            // 确保背包一开始隐藏
             if (inventoryCanvas != null)
             {
-                Debug.Log("[UIManager] Awake 时隐藏背包");
                 inventoryCanvas.SetActive(false);
             }
             else
             {
-                Debug.LogError("[UIManager] Awake 检测到 inventoryCanvas 为 null！");
+                Debug.LogError("[UIManager] Awake: inventoryCanvas 未赋值！");
             }
 
-            // 如果还有别的常驻面板，也可以在这里隐藏
-            // if (settingsCanvas != null) settingsCanvas.SetActive(false);
-            // if (dialogueCanvas != null) dialogueCanvas.SetActive(false);
+            // 一开始没有 ShopCanvas 的引用
+            shopCanvas = null;
+
+            // 监听场景加载
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
-            // 如果场景里又意外加载了第二个 UIManager，就销毁掉它
             Destroy(gameObject);
         }
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
     /// <summary>
-    /// 切换背包界面显示/隐藏
+    /// 每次新场景加载完毕后都会调用：
+    /// 如果加载的是 ShopRoom 场景，则尝试查找名为 “ShopCanvas” 的 GameObject 并隐藏它；
+    /// 如果当前不是 ShopRoom 场景，则把 shopCanvas 隐藏并置为 null 以便 GC。
     /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == SHOP_SCENE_NAME)
+        {
+            // 在 ShopRoom 场景里查找 ShopCanvas
+            GameObject obj = GameObject.Find(SHOP_CANVAS_NAME);
+            if (obj != null)
+            {
+                shopCanvas = obj;
+                shopCanvas.SetActive(false);
+                Debug.Log("[UIManager] 在 ShopRoom 场景找到并隐藏 ShopCanvas");
+            }
+            else
+            {
+                Debug.LogWarning($"[UIManager] ShopRoom 场景加载完毕，但找不到名为 '{SHOP_CANVAS_NAME}' 的 GameObject");
+                shopCanvas = null;
+            }
+        }
+        else
+        {
+            // 离开 ShopRoom 场景，确保隐藏并置空
+            if (shopCanvas != null)
+            {
+                shopCanvas.SetActive(false);
+            }
+            shopCanvas = null;
+        }
+    }
+
+    #region —— Inventory 界面相关 —— 
+
     public void ToggleInventory()
     {
         if (inventoryCanvas == null)
         {
-            Debug.LogError("[UIManager] inventoryCanvas 引用为空，无法切换背包显示！");
+            Debug.LogError("[UIManager] ToggleInventory: inventoryCanvas 未赋值！");
             return;
         }
-
-        bool isActive = inventoryCanvas.activeSelf;
-        inventoryCanvas.SetActive(!isActive);
+        inventoryCanvas.SetActive(!inventoryCanvas.activeSelf);
     }
 
-    /// <summary>
-    /// 强制打开背包界面
-    /// </summary>
     public void OpenInventory()
     {
         if (inventoryCanvas == null)
         {
-            Debug.LogError("[UIManager] inventoryCanvas 引用为空，无法打开背包！");
+            Debug.LogError("[UIManager] OpenInventory: inventoryCanvas 未赋值！");
             return;
         }
-
-        if (!inventoryCanvas.activeSelf)
-        {
-            inventoryCanvas.SetActive(true);
-        }
+        inventoryCanvas.SetActive(true);
     }
 
-    /// <summary>
-    /// 强制关闭背包界面
-    /// </summary>
     public void CloseInventory()
     {
         if (inventoryCanvas == null)
         {
-            Debug.LogError("[UIManager] inventoryCanvas 引用为空，无法关闭背包！");
+            Debug.LogError("[UIManager] CloseInventory: inventoryCanvas 未赋值！");
             return;
         }
-
-        if (inventoryCanvas.activeSelf)
-        {
-            inventoryCanvas.SetActive(false);
-        }
+        inventoryCanvas.SetActive(false);
     }
+
+    #endregion
+
+    #region —— Shop 主面板打开/关闭 —— 
+
+    /// <summary>
+    /// 切换商店主面板（ShopCanvas）的显示/隐藏。
+    /// 只有在 shopCanvas 不为 null（处于 ShopRoom 场景）时才生效；否则打印警告。
+    /// </summary>
+    public void ToggleShop()
+    {
+        if (shopCanvas == null)
+        {
+            Debug.LogWarning("[UIManager] ToggleShop: 当前不在 ShopRoom 场景或 ShopCanvas 不存在");
+            return;
+        }
+        shopCanvas.SetActive(!shopCanvas.activeSelf);
+    }
+
+    /// <summary>
+    /// 强制打开商店面板
+    /// </summary>
+    public void OpenShop()
+    {
+        if (shopCanvas == null)
+        {
+            Debug.LogWarning("[UIManager] OpenShop: 当前不在 ShopRoom 场景或 ShopCanvas 不存在");
+            return;
+        }
+        shopCanvas.SetActive(true);
+    }
+
+    /// <summary>
+    /// 强制关闭商店面板
+    /// </summary>
+    public void CloseShop()
+    {
+        if (shopCanvas == null)
+        {
+            Debug.LogWarning("[UIManager] CloseShop: 当前不在 ShopRoom 场景或 ShopCanvas 不存在");
+            return;
+        }
+        shopCanvas.SetActive(false);
+    }
+
+    #endregion
 }

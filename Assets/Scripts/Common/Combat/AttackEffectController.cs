@@ -28,7 +28,7 @@ public class AttackEffectController : MonoBehaviour
     public void PlayAttackEffect()
     {
         if (_currentEquipment == null) return;
-        WeaponData data = _currentEquipment.WeaponData;
+        WeaponData data = _currentEquipment.Data as WeaponData;
         if (data == null) return;
 
         // 1) 播放粒子特效（如果有）

@@ -1,32 +1,38 @@
-// ItemDatabase.cs
-// 单例，存储并实例化所有 ItemBase
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// ItemDatabase：负责把各类 ScriptableObject (WeaponData、ConsumableData、HelmetData、ArmorData) 
+/// 按 ID 存到字典里，并提供按 ID 创建 ItemBase 的功能。  
+/// 下面新增了一个“跨类型随机”接口：GetRandomItemsAllTypes
+/// </summary>
 public class ItemDatabase : MonoBehaviour
 {
     public static ItemDatabase Instance { get; private set; }
 
     [Header("武器（WeaponData）配置列表")]
-    [Tooltip("在 Inspector 中关联的所有 WeaponData（ScriptableObject）")]
     public WeaponData[] AllWeapons;
 
     [Header("消耗品（ConsumableData）配置列表")]
-    [Tooltip("在 Inspector 中关联的所有 ConsumableData（ScriptableObject）")]
     public ConsumableData[] AllConsumables;
 
-    // 内部映射：ID → WeaponData
+    [Header("头盔（HelmetData）配置列表")]
+    public HelmetData[] AllHelmets;
+
+    [Header("护甲（ArmorData）配置列表")]
+    public ArmorData[] AllArmors;
+
+    // 私有映射：EquipmentID/ConsumableID → 对应的 ScriptableObject
     private Dictionary<string, WeaponData> _weaponMap = new Dictionary<string, WeaponData>();
-
-    // 内部映射：ID → ConsumableData
     private Dictionary<string, ConsumableData> _consumableMap = new Dictionary<string, ConsumableData>();
+    private Dictionary<string, HelmetData> _helmetMap = new Dictionary<string, HelmetData>();
+    private Dictionary<string, ArmorData> _armorMap = new Dictionary<string, ArmorData>();
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-    
         }
         else
         {
@@ -34,80 +40,69 @@ public class ItemDatabase : MonoBehaviour
             return;
         }
 
-        // 构建武器数据缓存
+        // 初始化 _weaponMap
         if (AllWeapons != null)
         {
             foreach (var w in AllWeapons)
             {
-                if (w == null)
-                {
-                    Debug.LogWarning("[ItemDatabase] AllWeapons 数组中存在 null 元素，已跳过。");
-                    continue;
-                }
-
-                if (string.IsNullOrEmpty(w.WeaponID))
-                {
-                    Debug.LogWarning($"[ItemDatabase] WeaponData '{w.name}' 未设置 WeaponID，已跳过。");
-                    continue;
-                }
-
-                if (!_weaponMap.ContainsKey(w.WeaponID))
-                    _weaponMap[w.WeaponID] = w;
-                else
-                    Debug.LogWarning($"[ItemDatabase] 重复的 WeaponID: {w.WeaponID}（Asset 名称：{w.name}），已忽略后续重复项。");
+                if (w == null) continue;
+                if (string.IsNullOrEmpty(w.EquipmentID)) continue;
+                if (!_weaponMap.ContainsKey(w.EquipmentID))
+                    _weaponMap[w.EquipmentID] = w;
             }
         }
 
-        // 构建可消耗品数据缓存
+        // 初始化 _consumableMap
         if (AllConsumables != null)
         {
             foreach (var c in AllConsumables)
             {
-                if (c == null)
-                {
-                    Debug.LogWarning("[ItemDatabase] AllConsumables 数组中存在 null 元素，已跳过。");
-                    continue;
-                }
-
-                if (string.IsNullOrEmpty(c.ConsumableID))
-                {
-                    Debug.LogWarning($"[ItemDatabase] ConsumableData '{c.name}' 未设置 ConsumableID，已跳过。");
-                    continue;
-                }
-
+                if (c == null) continue;
+                if (string.IsNullOrEmpty(c.ConsumableID)) continue;
                 if (!_consumableMap.ContainsKey(c.ConsumableID))
                     _consumableMap[c.ConsumableID] = c;
-                else
-                    Debug.LogWarning($"[ItemDatabase] 重复的 ConsumableID: {c.ConsumableID}（Asset 名称：{c.name}），已忽略后续重复项。");
+            }
+        }
+
+        // 初始化 _helmetMap
+        if (AllHelmets != null)
+        {
+            foreach (var h in AllHelmets)
+            {
+                if (h == null) continue;
+                if (string.IsNullOrEmpty(h.EquipmentID)) continue;
+                if (!_helmetMap.ContainsKey(h.EquipmentID))
+                    _helmetMap[h.EquipmentID] = h;
+            }
+        }
+
+        // 初始化 _armorMap
+        if (AllArmors != null)
+        {
+            foreach (var a in AllArmors)
+            {
+                if (a == null) continue;
+                if (string.IsNullOrEmpty(a.EquipmentID)) continue;
+                if (!_armorMap.ContainsKey(a.EquipmentID))
+                    _armorMap[a.EquipmentID] = a;
             }
         }
     }
 
     /// <summary>
-    /// 创建指定 ID 的 ItemBase 实例。
-    /// 1. 优先从武器映射中查找 WeaponData 并构造 EquipmentItem；
-    /// 2. 若未找到，再从可消耗品映射中查找 ConsumableData 并构造 ConsumableItem；
-    /// 3. 都未找到则返回 null（并在控制台报错）。
+    /// 创建指定 ID 的 ItemBase 实例（优先查武器、消耗品、头盔、护甲）。
     /// </summary>
     public ItemBase CreateItem(string itemID)
     {
-        // 优先从武器数据里查找
+        // (1) 武器
         if (_weaponMap.TryGetValue(itemID, out var wdata))
         {
-            // 用武器数据构造一个 EquipmentItem
-            return new EquipmentItem(
-                wdata.WeaponID,
-                wdata,
-                // 这里用 wdata.name 也可以改为 wdata.DisplayName（如果 WeaponData 定义了 DisplayName 字段）
-                wdata.name,
-                wdata.Icon
-            );
+            return new EquipmentItem(wdata.EquipmentID, wdata, wdata.Price);
         }
 
-        // 如果武器里没找到，再尝试从可消耗品数据里查找
+        // (2) 消耗品
         if (_consumableMap.TryGetValue(itemID, out var cdata))
         {
-            // 用可消耗品数据构造一个 ConsumableItem
             return new ConsumableItem(
                 cdata.ConsumableID,
                 cdata.DisplayName,
@@ -115,16 +110,29 @@ public class ItemDatabase : MonoBehaviour
                 cdata.HealAmount,
                 cdata.BuffType,
                 cdata.BuffDuration,
-                cdata.BuffValue
+                cdata.BuffValue,
+                cdata.Price
             );
         }
 
-        Debug.LogError($"[ItemDatabase] CreateItem 时传入了不存在的 itemID: {itemID}");
+        // (3) 头盔
+        if (_helmetMap.TryGetValue(itemID, out var hdata))
+        {
+            return new EquipmentItem(hdata.EquipmentID, hdata, hdata.Price);
+        }
+
+        // (4) 护甲
+        if (_armorMap.TryGetValue(itemID, out var adata))
+        {
+            return new EquipmentItem(adata.EquipmentID, adata, adata.Price);
+        }
+
+        Debug.LogError($"[ItemDatabase] CreateItem: 未找到 itemID = {itemID}");
         return null;
     }
 
     /// <summary>
-    /// （可选）示例：根据传入的类型，随机或条件获取多件 ItemBase，用于商店或掉落表。
+    /// （原有）根据传入的类型，随机获取多件 ItemBase，用于商店或掉落表。
     /// </summary>
     public List<ItemBase> GetRandomItems(int count, ItemType filterType)
     {
@@ -149,6 +157,62 @@ public class ItemDatabase : MonoBehaviour
                 int idx = Random.Range(0, keys.Count);
                 result.Add(CreateItem(keys[idx]));
             }
+        }
+        else if (filterType == ItemType.Helmet)
+        {
+            var keys = new List<string>(_helmetMap.Keys);
+            for (int i = 0; i < count; i++)
+            {
+                if (keys.Count == 0) break;
+                int idx = Random.Range(0, keys.Count);
+                result.Add(CreateItem(keys[idx]));
+            }
+        }
+        else if (filterType == ItemType.Armor)
+        {
+            var keys = new List<string>(_armorMap.Keys);
+            for (int i = 0; i < count; i++)
+            {
+                if (keys.Count == 0) break;
+                int idx = Random.Range(0, keys.Count);
+                result.Add(CreateItem(keys[idx]));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 新增方法：从所有类型的映射中汇总出所有 ID，随机抽取 count 件 ItemBase。
+    /// </summary>
+    public List<ItemBase> GetRandomItemsAllTypes(int count)
+    {
+        // 1. 汇总所有类型的 Key（ID）
+        List<string> allKeys = new List<string>();
+        allKeys.AddRange(_weaponMap.Keys);
+        allKeys.AddRange(_consumableMap.Keys);
+        allKeys.AddRange(_helmetMap.Keys);
+        allKeys.AddRange(_armorMap.Keys);
+
+        // 2. Fisher–Yates 洗牌（或直接随机挑）
+        for (int i = allKeys.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            // 交换
+            string tmp = allKeys[i];
+            allKeys[i] = allKeys[j];
+            allKeys[j] = tmp;
+        }
+
+        // 3. 取前 count 个（如果不够就取所有）
+        int actualCount = Mathf.Min(count, allKeys.Count);
+        List<ItemBase> result = new List<ItemBase>();
+
+        for (int i = 0; i < actualCount; i++)
+        {
+            ItemBase item = CreateItem(allKeys[i]);
+            if (item != null)
+                result.Add(item);
         }
 
         return result;

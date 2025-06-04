@@ -18,6 +18,6 @@ MonoBehaviour:
   HealAmount: 0
   BuffType: 3
   BuffDuration: 20
-  BuffValue: 20
+  BuffValue: 0.2
   IsStackable: 1
   Price: 100

@@ -3,7 +3,7 @@ using UnityEngine;
 using System;
 
 /// <summary>
-/// 玩家属性类：负责记录和管理玩家的核心属性，如血量上限、攻击力、防御力、移动速度、跳跃高度、货币数量、以及攻击倍率等
+/// 玩家属性类：负责记录和管理玩家的核心属性，如血量上限、攻击力、防御力（头盔防御 + 护甲防御 + 防御系数）、移动速度、跳跃高度、货币数量、以及攻击倍率等
 /// </summary>
 public class PlayerAttributes : MonoBehaviour
 {
@@ -12,8 +12,14 @@ public class PlayerAttributes : MonoBehaviour
     [SerializeField] private int maxHealth = 100;
     [Tooltip("玩家的攻击力")]
     [SerializeField] private int attack = 10;
-    [Tooltip("玩家的防御力")]
-    [SerializeField] private int defense = 5;
+
+    [Header("防御相关")]
+    [Tooltip("头盔提供的防御值")]
+    [SerializeField] private int helmetDefense = 0;
+    [Tooltip("护甲提供的防御值")]
+    [SerializeField] private int armorDefense = 0;
+    [Tooltip("可抵消的伤害=Defense的和*multiplier")]
+    [SerializeField] private float defenseMultiplier = 0.2f;
 
     [Header("移动相关属性")]
     [Tooltip("玩家的移动速度")]
@@ -32,7 +38,9 @@ public class PlayerAttributes : MonoBehaviour
     // 只读访问器
     public int MaxHealth => maxHealth;
     public int Attack => attack;
-    public int Defense => defense;
+    public int HelmetDefense => helmetDefense;
+    public int ArmorDefense => armorDefense;
+    public float DefenseMultiplier => defenseMultiplier;
     public float MovementSpeed => movementSpeed;
     public float JumpHeight => jumpHeight;
     public float AttackMultiplier => attackMultiplier;
@@ -51,20 +59,22 @@ public class PlayerAttributes : MonoBehaviour
     }
 
     // 事件
-    public event Action<int, int> OnHealthChanged;      // (当前血量, 最大血量)
-    public event Action<int> OnAttackChanged;           // (当前攻击力)
-    public event Action<int> OnDefenseChanged;          // (当前防御力)
-    public event Action<float> OnMovementSpeedChanged;  // (当前移动速度)
-    public event Action<float> OnJumpHeightChanged;     // (当前跳跃高度)
-    public event Action<float> OnAttackMultiplierChanged; // (当前攻击倍率)
-    public event Action<int> OnCurrencyChanged;         // (当前货币)
+    public event Action<int, int> OnHealthChanged;            // (当前血量, 最大血量)
+    public event Action<int> OnAttackChanged;                 // (当前攻击力)
+    public event Action<int> OnHelmetDefenseChanged;          // (当前头盔防御)
+    public event Action<int> OnArmorDefenseChanged;           // (当前护甲防御)
+    public event Action<float> OnDefenseMultiplierChanged;    // (当前防御系数)
+    public event Action<float> OnMovementSpeedChanged;        // (当前移动速度)
+    public event Action<float> OnJumpHeightChanged;           // (当前跳跃高度)
+    public event Action<float> OnAttackMultiplierChanged;     // (当前攻击倍率)
+    public event Action<int> OnCurrencyChanged;               // (当前货币)
 
     private void Awake()
     {
         currentHealth = maxHealth;
     }
 
-    // 血量相关
+    #region 血量相关
     public void Heal(int amount)
     {
         if (amount <= 0) return;
@@ -74,7 +84,12 @@ public class PlayerAttributes : MonoBehaviour
     public void TakeDamage(int amount)
     {
         if (amount <= 0) return;
-        int effectiveDamage = Mathf.Max(1, amount - defense);
+
+        // 计算总防御 = (头盔防御 + 护甲防御) * 防御系数
+        float totalDefFloat = (helmetDefense + armorDefense) * defenseMultiplier;
+        int totalDefense = Mathf.FloorToInt(totalDefFloat);
+
+        int effectiveDamage = Mathf.Max(1, amount - totalDefense);
         CurrentHealth -= effectiveDamage;
     }
 
@@ -82,8 +97,9 @@ public class PlayerAttributes : MonoBehaviour
     {
         CurrentHealth = maxHealth;
     }
+    #endregion
 
-    // 攻击力相关
+    #region 攻击力相关
     public void AddAttack(int amount)
     {
         if (amount == 0) return;
@@ -96,22 +112,50 @@ public class PlayerAttributes : MonoBehaviour
         attack = Mathf.Max(0, newAttack);
         OnAttackChanged?.Invoke(attack);
     }
+    #endregion
 
-    // 防御力相关
-    public void AddDefense(int amount)
+    #region 防御相关
+    public void AddHelmetDefense(int amount)
     {
         if (amount == 0) return;
-        defense = Mathf.Max(0, defense + amount);
-        OnDefenseChanged?.Invoke(defense);
+        helmetDefense = Mathf.Max(0, helmetDefense + amount);
+        OnHelmetDefenseChanged?.Invoke(helmetDefense);
     }
 
-    public void SetDefense(int newDefense)
+    public void SetHelmetDefense(int newHelmetDefense)
     {
-        defense = Mathf.Max(0, newDefense);
-        OnDefenseChanged?.Invoke(defense);
+        helmetDefense = Mathf.Max(0, newHelmetDefense);
+        OnHelmetDefenseChanged?.Invoke(helmetDefense);
     }
 
-    // 移动相关
+    public void AddArmorDefense(int amount)
+    {
+        if (amount == 0) return;
+        armorDefense = Mathf.Max(0, armorDefense + amount);
+        OnArmorDefenseChanged?.Invoke(armorDefense);
+    }
+
+    public void SetArmorDefense(int newArmorDefense)
+    {
+        armorDefense = Mathf.Max(0, newArmorDefense);
+        OnArmorDefenseChanged?.Invoke(armorDefense);
+    }
+
+    public void AddDefenseMultiplier(float amount)
+    {
+        if (Mathf.Approximately(amount, 0f)) return;
+        defenseMultiplier = Mathf.Max(0f, defenseMultiplier + amount);
+        OnDefenseMultiplierChanged?.Invoke(defenseMultiplier);
+    }
+
+    public void SetDefenseMultiplier(float newMultiplier)
+    {
+        defenseMultiplier = Mathf.Max(0f, newMultiplier);
+        OnDefenseMultiplierChanged?.Invoke(defenseMultiplier);
+    }
+    #endregion
+
+    #region 移动相关
     public void AddMovementSpeed(float amount)
     {
         if (Mathf.Approximately(amount, 0f)) return;
@@ -137,8 +181,9 @@ public class PlayerAttributes : MonoBehaviour
         jumpHeight = Mathf.Max(0f, newHeight);
         OnJumpHeightChanged?.Invoke(jumpHeight);
     }
+    #endregion
 
-    // 攻击倍率相关
+    #region 攻击倍率相关
     public void AddAttackMultiplier(float amount)
     {
         if (Mathf.Approximately(amount, 0f)) return;
@@ -151,8 +196,9 @@ public class PlayerAttributes : MonoBehaviour
         attackMultiplier = Mathf.Max(0f, newMultiplier);
         OnAttackMultiplierChanged?.Invoke(attackMultiplier);
     }
+    #endregion
 
-    // 货币相关
+    #region 货币相关
     public void AddCurrency(int amount)
     {
         if (amount == 0) return;
@@ -174,4 +220,5 @@ public class PlayerAttributes : MonoBehaviour
         currency = Mathf.Max(0, newAmount);
         OnCurrencyChanged?.Invoke(currency);
     }
+    #endregion
 }

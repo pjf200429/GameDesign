@@ -39,6 +39,8 @@ public class PlayerInventory : MonoBehaviour
         // DontDestroyOnLoad(gameObject);
     }
 
+
+
     #region 添加物品
 
     /// <summary>
@@ -142,11 +144,10 @@ public class PlayerInventory : MonoBehaviour
 
         item.Use(target);
 
-        // 如果是 ConsumableItem，要一旦“吃掉”就减少数量或移除背包
+
         if (item is ConsumableItem consumable)
         {
-            consumable.ReduceQuantity(1);
-            Debug.Log($"[PlayerInventory] 消耗品 {consumable.DisplayName} 使用后数量 = {consumable.Quantity}");
+        
             if (consumable.Quantity <= 0)
             {
                 _items.Remove(consumable);
@@ -155,52 +156,17 @@ public class PlayerInventory : MonoBehaviour
         }
         else if (item is EquipmentItem equip)
         {
-            // 如果是装备，先调用 EquipWeapon
-            EquipWeapon(equip);
-            // 不从列表移除
+          
+            item.Use(target);
         }
 
-        // 触发背包变化事件
+       
         OnInventoryChanged?.Invoke();
     }
 
     #endregion
 
-    #region 装备武器
-
-    /// <summary>
-    /// 装备某把武器（前提：该武器实例已经在背包里）
-    /// </summary>
-    /// <param name="weapon">要装备的 Weapon</param>
-    public void EquipWeapon(EquipmentItem weapon)
-    {
-        if (weapon == null)
-        {
-            Debug.LogWarning("[PlayerInventory] EquipWeapon 传入了 null，忽略。");
-            return;
-        }
-
-        if (!_items.Contains(weapon))
-        {
-            Debug.LogWarning($"[PlayerInventory] 背包中不存在武器：{weapon.DisplayName}");
-            return;
-        }
-
-        _equippedWeapon = weapon;
-        Debug.Log($"[PlayerInventory] 装备武器：{weapon.DisplayName}");
-
-        // 如果你有一个 WeaponSwitcher 或 PlayerCombat，用来将当前 WeaponData 绑定到玩家手上：
-        var switcher = GetComponent<WeaponSwitcher>();
-        if (switcher != null)
-        {
-            switcher.SwitchTo(weapon);
-        }
-
-        // 触发背包变化事件（如果 UI 或其它逻辑要显示当前装备）
-        OnInventoryChanged?.Invoke();
-    }
-
-    #endregion
+   
 
     #region 查询接口
 

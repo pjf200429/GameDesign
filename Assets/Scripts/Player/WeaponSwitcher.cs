@@ -1,5 +1,4 @@
-// WeaponSwitcher.cs
-// 负责接收来自背包或外部的“切换武器”请求，并调用 PlayerCombat 进行实际装备
+
 using UnityEngine;
 
 public class WeaponSwitcher : MonoBehaviour
@@ -9,7 +8,6 @@ public class WeaponSwitcher : MonoBehaviour
 
     private void Awake()
     {
-        // 如果 PlayerCombat 挂在本对象的子物体上，用 GetComponentInChildren 查找
         _playerCombat = GetComponentInChildren<PlayerCombat>();
         _inventory = GetComponent<PlayerInventory>();
 

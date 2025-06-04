@@ -23,11 +23,7 @@ public class EnemyHealthController : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.K))
-        {
-            // 调试用：按 K 键模拟一次最大生命值的 1/5 的伤害
-            TakeDamage(maxHealth / 5);
-        }
+       
     }
 
     /// <summary>

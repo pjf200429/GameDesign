@@ -101,7 +101,7 @@ public class InputController : MonoBehaviour
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = AttackPotion，请确认 ConsumableData（攻击药水）已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Portion02，请确认 ConsumableData（攻击药水）已正确配置。");
             }
         }
 
@@ -121,7 +121,7 @@ public class InputController : MonoBehaviour
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = DefensePotion，请确认 ConsumableData（防御药水）已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Portion03，请确认 ConsumableData（防御药水）已正确配置。");
             }
         }
 
@@ -142,6 +142,56 @@ public class InputController : MonoBehaviour
             else
             {
                 Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Sword03 的武器，请确认 WeaponData 已正确配置。");
+            }
+        }
+
+        // —— 新增：按下 F7：尝试获得 Armor01 —— 
+        if (Input.GetKeyDown(KeyCode.F7))
+        {
+            if (_playerInventory == null) return;
+
+            ItemBase armor = ItemDatabase.Instance.CreateItem("Armor01");
+            if (armor != null)
+            {
+                bool added = _playerInventory.AddItem(armor);
+                if (added)
+                    Debug.Log("[InputController] 已将 Armor01（护甲）添加到背包。");
+                else
+                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Armor01（护甲）。");
+            }
+            else
+            {
+                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Armor01，请确认 ArmorData 已正确配置。");
+            }
+        }
+
+        // —— 新增：按下 F8：尝试获得 Helmet01 —— 
+        if (Input.GetKeyDown(KeyCode.F8))
+        {
+            if (_playerInventory == null) return;
+
+            ItemBase helmet = ItemDatabase.Instance.CreateItem("Helmet01");
+            if (helmet != null)
+            {
+                bool added = _playerInventory.AddItem(helmet);
+                if (added)
+                    Debug.Log("[InputController] 已将 Helmet01（头盔）添加到背包。");
+                else
+                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Helmet01（头盔）。");
+            }
+            else
+            {
+                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Helmet01，请确认 HelmetData 已正确配置。");
+            }
+        }
+
+        // —— 新增：按下 M 键，打开商店面板 —— 
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            // 只有当在 ShopRoom 场景并且 UIManager 成功缓存了 shopCanvas 时，这里才会真正打开商店
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.OpenShop();
             }
         }
     }

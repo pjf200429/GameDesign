@@ -39,7 +39,7 @@ public static class BuffEffects
                     if (attr != null)
                     {
                  
-                        attr.AddDefense((int)(buff.Value * buff.StackCount));
+                        attr.AddDefenseMultiplier((int)(buff.Value * buff.StackCount));
                         Debug.Log($"[BuffEffects] 对象 {target.name} 获得 DefenseUp Buff，Increase Defense = {buff.Value * buff.StackCount}");
                     }
                 }
@@ -121,7 +121,7 @@ public static class BuffEffects
                     var attr = target.GetComponent<PlayerAttributes>();
                     if (attr != null)
                     {
-                        attr.AddDefense(-(int)(buff.Value * buff.StackCount));
+                        attr.AddDefenseMultiplier(-(int)(buff.Value * buff.StackCount));
                        
                     }
                 }

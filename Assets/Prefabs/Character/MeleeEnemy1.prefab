@@ -8116,6 +8116,7 @@ MonoBehaviour:
     m_Bits: 2048
   attackOffset: {x: 0, y: 0}
   knockbackForce: 5
+  defense: 0
   jumpForce: 5
   spriteHolder: {fileID: 3363852483307139326}
 --- !u!1 &8827643254797090275

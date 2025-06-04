@@ -1,11 +1,11 @@
-// EnemyBase.cs
+
 using UnityEngine;
 
 public abstract class EnemyBase : MonoBehaviour, IDamageable
 {
     [Header("Attack Settings")]
-    public Transform attackPoint;        // 攻击检测挂点
-    public float attackCooldown = 1f;    // 攻击冷却
+    public Transform attackPoint;        // Attack detection point
+    public float attackCooldown = 1f;    // Attack cooldown in seconds
     protected IWeaponStrategy attackStrategy;
     private float _lastAttackTime = -999f;
 
@@ -13,13 +13,17 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     public SPUM_Prefabs spum;
 
     [Header("Death Settings")]
-    public float deathY = -10f;
+    public float deathY = -10f;          // Y position below which enemy dies
+
+    [Header("Drop Settings")]
+    [Tooltip("Amount of gold dropped when this enemy dies")]
+    public int goldDrop = 0;
 
     protected bool isDead;
     protected enum BaseState { Idle, Moving, Damaged, Dead }
     protected BaseState currentState = BaseState.Idle;
 
-    // 缓存组件引用
+    // Cached component references
     private EnemyHealthController _healthController;
     protected Rigidbody2D rb;
 
@@ -43,7 +47,12 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     protected virtual void Update()
     {
         if (isDead) return;
-        if (transform.position.y < deathY) { HandleDeath(); return; }
+
+        if (transform.position.y < deathY)
+        {
+            HandleDeath();
+            return;
+        }
 
         switch (currentState)
         {
@@ -54,7 +63,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
                 UpdateMoving();
                 break;
             case BaseState.Damaged:
-                // 受击停顿
+                // Paused while damaged
                 break;
         }
     }
@@ -88,7 +97,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     }
 
     /// <summary>
-    /// Animation Event 挂在此方法上，子类可 override 先传朝向
+    /// Animation Event calls this method when attack animation hits. Subclasses may override to pass facing direction first.
     /// </summary>
     public virtual void OnAttackHitEvent()
     {
@@ -113,14 +122,37 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     {
         if (isDead) return;
         isDead = true;
+
+        // Drop gold to player when enemy dies
+        var playerGO = GameObject.FindWithTag("Player");
+        if (playerGO != null)
+        {
+            var attrs = playerGO.GetComponent<PlayerAttributes>();
+            if (attrs != null)
+            {
+                attrs.AddCurrency(goldDrop);
+                Debug.Log($"[EnemyBase] Enemy {name} died and dropped {goldDrop} gold.");
+            }
+            else
+            {
+                Debug.LogWarning("[EnemyBase] Found Player object but missing PlayerAttributes component; cannot add gold.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[EnemyBase] Could not find GameObject tagged 'Player'; cannot drop gold.");
+        }
+
         PlayAnimation(PlayerState.DEATH);
         Destroy(gameObject, 0.5f);
     }
 
-    protected void PlayAnimation(PlayerState st)
-        => spum?.PlayAnimation(st, 0);
+    protected void PlayAnimation(PlayerState state)
+    {
+        spum?.PlayAnimation(state, 0);
+    }
 
-    // —— 子类必须实现 —— 
+    // Subclasses must implement these methods
     protected abstract void InitializeAttackStrategy();
     protected abstract bool ShouldAttack();
     protected abstract bool ShouldMove();

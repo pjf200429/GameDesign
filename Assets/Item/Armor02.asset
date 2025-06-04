@@ -9,15 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 79139553710b28f4fb7309f238e69398, type: 3}
-  m_Name: RoomBuilder
+  m_Script: {fileID: 11500000, guid: e1b088194158ed440a06f812654206d9, type: 3}
+  m_Name: Armor02
   m_EditorClassIdentifier: 
-  regularRoomSceneNames:
-  - EnemyRoom1
-  - EnemyRoom2
-  - EnemyRoom3
-  - EnemyRoom4
-  - EnemyRoom5
-  shopRoomSceneName: ShopRoom
-  regularRoomsPerStage: 1
-  totalStages: 3
+  EquipmentID: Armor02
+  DisplayName: Armor02
+  Icon: {fileID: 3193519689285016258, guid: cdf6ea08334f54b81b8e1bfb81a896c7, type: 3}
+  Price: 200
+  DefenseValue: 40
+  Weight: 0
+  SetName: 

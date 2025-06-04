@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ae4dbb283b67a942a303f5c70815959, type: 3}
   m_Name: Sword02
   m_EditorClassIdentifier: 
-  WeaponID: Sword02
+  EquipmentID: Sword02
   DisplayName: Sword02
   Icon: {fileID: 21300000, guid: 400f84ca50ac94f20a75a7ecfbe2cfe8, type: 3}
+  Price: 200
   Damage: 40
   AttackInterval: 0.2
   AttackRange: 5
