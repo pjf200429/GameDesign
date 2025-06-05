@@ -6,11 +6,11 @@ using UnityEngine;
 /// </summary>
 public enum ItemType
 {
-    Weapon,
-    Consumable,
+    Armor,         
     Helmet,
-    Armor
-    // 后面可根据需要扩展：Material、QuestItem 等
+    Consumable,
+    MeleeWeapon,    // 近战武器
+    RangedWeapon    // 远程武器（魔法/子弹）
 }
 
 /// <summary>

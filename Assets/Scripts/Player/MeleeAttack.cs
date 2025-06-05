@@ -8,7 +8,7 @@ public class MeleeAttack : IWeaponStrategy
     private LayerMask targetLayers;
     private Vector2 offset;
     private float knockbackForce;
-    private bool isFacingRight = true;
+
 
     public MeleeAttack(
         float range,
@@ -24,12 +24,8 @@ public class MeleeAttack : IWeaponStrategy
         this.knockbackForce = knockbackForce;
     }
 
-    public void SetFacingDirection(bool facingRight)
-    {
-        isFacingRight = facingRight;
-    }
 
-    public void Attack(Transform attackOrigin)
+    public void Attack(Transform attackOrigin, Vector3 targetPos)
     {
         // 1. 先从 attackOrigin（通常是 Player 的攻击挂点） 找到 PlayerAttributes，获取攻击倍率
         PlayerAttributes attrs = attackOrigin.GetComponentInParent<PlayerAttributes>();

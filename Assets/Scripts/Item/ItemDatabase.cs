@@ -2,28 +2,33 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// ItemDatabase：负责把各类 ScriptableObject (WeaponData、ConsumableData、HelmetData、ArmorData) 
-/// 按 ID 存到字典里，并提供按 ID 创建 ItemBase 的功能。  
-/// 下面新增了一个“跨类型随机”接口：GetRandomItemsAllTypes
+/// ItemDatabase: Stores various ScriptableObjects 
+/// (MeleeWeaponData, RangedWeaponData, ConsumableData, HelmetData, ArmorData) 
+/// in dictionaries by their IDs and provides functionality to create ItemBase instances by ID.
+/// Also includes a “GetRandomItemsAllTypes” method to randomly pick items across all categories.
 /// </summary>
 public class ItemDatabase : MonoBehaviour
 {
     public static ItemDatabase Instance { get; private set; }
 
-    [Header("武器（WeaponData）配置列表")]
-    public WeaponData[] AllWeapons;
+    [Header("Melee Weapons (MeleeWeaponData) List")]
+    public MeleeWeaponData[] AllWeapons;
 
-    [Header("消耗品（ConsumableData）配置列表")]
+    [Header("Ranged Weapons (RangedWeaponData) List")]
+    public RangedWeaponData[] AllRangedWeapons;
+
+    [Header("Consumables (ConsumableData) List")]
     public ConsumableData[] AllConsumables;
 
-    [Header("头盔（HelmetData）配置列表")]
+    [Header("Helmets (HelmetData) List")]
     public HelmetData[] AllHelmets;
 
-    [Header("护甲（ArmorData）配置列表")]
+    [Header("Armors (ArmorData) List")]
     public ArmorData[] AllArmors;
 
-    // 私有映射：EquipmentID/ConsumableID → 对应的 ScriptableObject
-    private Dictionary<string, WeaponData> _weaponMap = new Dictionary<string, WeaponData>();
+    // Private mappings: ID → corresponding ScriptableObject
+    private Dictionary<string, MeleeWeaponData> _weaponMap = new Dictionary<string, MeleeWeaponData>();
+    private Dictionary<string, RangedWeaponData> _rangedWeaponMap = new Dictionary<string, RangedWeaponData>();
     private Dictionary<string, ConsumableData> _consumableMap = new Dictionary<string, ConsumableData>();
     private Dictionary<string, HelmetData> _helmetMap = new Dictionary<string, HelmetData>();
     private Dictionary<string, ArmorData> _armorMap = new Dictionary<string, ArmorData>();
@@ -40,7 +45,7 @@ public class ItemDatabase : MonoBehaviour
             return;
         }
 
-        // 初始化 _weaponMap
+        // Initialize _weaponMap (melee weapons)
         if (AllWeapons != null)
         {
             foreach (var w in AllWeapons)
@@ -52,7 +57,19 @@ public class ItemDatabase : MonoBehaviour
             }
         }
 
-        // 初始化 _consumableMap
+        // Initialize _rangedWeaponMap (ranged weapons)
+        if (AllRangedWeapons != null)
+        {
+            foreach (var r in AllRangedWeapons)
+            {
+                if (r == null) continue;
+                if (string.IsNullOrEmpty(r.EquipmentID)) continue;
+                if (!_rangedWeaponMap.ContainsKey(r.EquipmentID))
+                    _rangedWeaponMap[r.EquipmentID] = r;
+            }
+        }
+
+        // Initialize _consumableMap (consumables)
         if (AllConsumables != null)
         {
             foreach (var c in AllConsumables)
@@ -64,7 +81,7 @@ public class ItemDatabase : MonoBehaviour
             }
         }
 
-        // 初始化 _helmetMap
+        // Initialize _helmetMap (helmets)
         if (AllHelmets != null)
         {
             foreach (var h in AllHelmets)
@@ -76,7 +93,7 @@ public class ItemDatabase : MonoBehaviour
             }
         }
 
-        // 初始化 _armorMap
+        // Initialize _armorMap (armors)
         if (AllArmors != null)
         {
             foreach (var a in AllArmors)
@@ -90,17 +107,23 @@ public class ItemDatabase : MonoBehaviour
     }
 
     /// <summary>
-    /// 创建指定 ID 的 ItemBase 实例（优先查武器、消耗品、头盔、护甲）。
+    /// Creates an ItemBase instance given an itemID (priority order: Melee → Ranged → Consumable → Helmet → Armor).
     /// </summary>
     public ItemBase CreateItem(string itemID)
     {
-        // (1) 武器
+        // (1) Melee Weapon
         if (_weaponMap.TryGetValue(itemID, out var wdata))
         {
             return new EquipmentItem(wdata.EquipmentID, wdata, wdata.Price);
         }
 
-        // (2) 消耗品
+        // (2) Ranged Weapon
+        if (_rangedWeaponMap.TryGetValue(itemID, out var rdata))
+        {
+            return new EquipmentItem(rdata.EquipmentID, rdata, rdata.Price);
+        }
+
+        // (3) Consumable
         if (_consumableMap.TryGetValue(itemID, out var cdata))
         {
             return new ConsumableItem(
@@ -115,32 +138,43 @@ public class ItemDatabase : MonoBehaviour
             );
         }
 
-        // (3) 头盔
+        // (4) Helmet
         if (_helmetMap.TryGetValue(itemID, out var hdata))
         {
             return new EquipmentItem(hdata.EquipmentID, hdata, hdata.Price);
         }
 
-        // (4) 护甲
+        // (5) Armor
         if (_armorMap.TryGetValue(itemID, out var adata))
         {
             return new EquipmentItem(adata.EquipmentID, adata, adata.Price);
         }
 
-        Debug.LogError($"[ItemDatabase] CreateItem: 未找到 itemID = {itemID}");
+        Debug.LogError($"[ItemDatabase] CreateItem: Could not find itemID = {itemID}");
         return null;
     }
 
     /// <summary>
-    /// （原有）根据传入的类型，随机获取多件 ItemBase，用于商店或掉落表。
+    /// (Existing) Returns a list of random items filtered by a specific ItemType (MeleeWeapon, RangedWeapon, Consumable, Helmet, Armor).
+    /// Useful for shop inventories or loot tables.
     /// </summary>
     public List<ItemBase> GetRandomItems(int count, ItemType filterType)
     {
         var result = new List<ItemBase>();
 
-        if (filterType == ItemType.Weapon)
+        if (filterType == ItemType.MeleeWeapon)
         {
             var keys = new List<string>(_weaponMap.Keys);
+            for (int i = 0; i < count; i++)
+            {
+                if (keys.Count == 0) break;
+                int idx = Random.Range(0, keys.Count);
+                result.Add(CreateItem(keys[idx]));
+            }
+        }
+        else if (filterType == ItemType.RangedWeapon)
+        {
+            var keys = new List<string>(_rangedWeaponMap.Keys);
             for (int i = 0; i < count; i++)
             {
                 if (keys.Count == 0) break;
@@ -183,28 +217,28 @@ public class ItemDatabase : MonoBehaviour
     }
 
     /// <summary>
-    /// 新增方法：从所有类型的映射中汇总出所有 ID，随机抽取 count 件 ItemBase。
+    /// (New) Aggregates all IDs across every category and returns a random selection of count ItemBase instances.
     /// </summary>
     public List<ItemBase> GetRandomItemsAllTypes(int count)
     {
-        // 1. 汇总所有类型的 Key（ID）
+        // 1. Aggregate all keys (IDs) from every mapping
         List<string> allKeys = new List<string>();
         allKeys.AddRange(_weaponMap.Keys);
+        allKeys.AddRange(_rangedWeaponMap.Keys);
         allKeys.AddRange(_consumableMap.Keys);
         allKeys.AddRange(_helmetMap.Keys);
         allKeys.AddRange(_armorMap.Keys);
 
-        // 2. Fisher–Yates 洗牌（或直接随机挑）
+        // 2. Fisher–Yates shuffle
         for (int i = allKeys.Count - 1; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
-            // 交换
             string tmp = allKeys[i];
             allKeys[i] = allKeys[j];
             allKeys[j] = tmp;
         }
 
-        // 3. 取前 count 个（如果不够就取所有）
+        // 3. Take the first count elements (or fewer if there aren't enough)
         int actualCount = Mathf.Min(count, allKeys.Count);
         List<ItemBase> result = new List<ItemBase>();
 

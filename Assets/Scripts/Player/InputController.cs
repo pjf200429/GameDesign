@@ -184,6 +184,44 @@ public class InputController : MonoBehaviour
                 Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Helmet01，请确认 HelmetData 已正确配置。");
             }
         }
+        // —— 新增：按下 F9：尝试获得 Magic01 —— 
+        if (Input.GetKeyDown(KeyCode.F9))
+        {
+            if (_playerInventory == null) return;
+
+            ItemBase ranged01 = ItemDatabase.Instance.CreateItem("Magic01");
+            if (ranged01 != null)
+            {
+                bool added = _playerInventory.AddItem(ranged01);
+                if (added)
+                    Debug.Log("[InputController] 已将 Magic01（m魔法武器）添加到背包。");
+                else
+                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Helmet01（头盔）。");
+            }
+            else
+            {
+                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Magic01，请确认 HelmetData 已正确配置。");
+            }
+        }
+        // —— 新增：按下 F10：尝试获得 Magic02—— 
+        if (Input.GetKeyDown(KeyCode.F10))
+        {
+            if (_playerInventory == null) return;
+
+            ItemBase ranged02 = ItemDatabase.Instance.CreateItem("Magic02");
+            if (ranged02 != null)
+            {
+                bool added = _playerInventory.AddItem(ranged02);
+                if (added)
+                    Debug.Log("[InputController] 已将 Magic02（魔法武器）添加到背包。");
+                else
+                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Helmet01（头盔）。");
+            }
+            else
+            {
+                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Magic01，请确认 HelmetData 已正确配置。");
+            }
+        }
 
         // —— 新增：按下 M 键，打开商店面板 —— 
         if (Input.GetKeyDown(KeyCode.M))

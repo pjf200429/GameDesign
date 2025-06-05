@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdb8e28b4c4f2e84a81757f31ccce2cd, type: 3}
+  m_Name: Magic02
+  m_EditorClassIdentifier: 
+  EquipmentID: Magic02
+  DisplayName: Magic02
+  Icon: {fileID: 21300000, guid: ffef52aa2bdb04c1394af5d4599ed210, type: 3}
+  Price: 400
+  Damage: 0
+  FireInterval: 0
+  ProjectileSpeed: 0
+  MaxRange: 0
+  ProjectilePrefab: {fileID: 0}
+  HitEffectPrefab: {fileID: 0}
+  HitEffectDuration: 2
+  AttackAnimation: {fileID: 7400000, guid: 9a26543e06de846d08fbe01dbfcd13e2, type: 2}
+  AttackSound: {fileID: 0}

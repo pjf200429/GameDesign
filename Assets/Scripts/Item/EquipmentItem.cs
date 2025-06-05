@@ -1,12 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// 统一处理所有“可装备物品”（Weapon、Helmet、Armor）。
+/// 统一处理所有“可装备物品”（Armor、Helmet、MeleeWeapon、RangedWeapon）
 /// </summary>
 public class EquipmentItem : ItemBase
 {
     /// <summary>
-    /// 既可以是 WeaponData，也可以是 HelmetData 或 ArmorData。
+    /// 既可以是 ArmorData、HelmetData、MeleeWeaponData 或 RangedWeaponData
     /// </summary>
     public EquipmentData Data { get; private set; }
 
@@ -26,49 +26,37 @@ public class EquipmentItem : ItemBase
     {
         get
         {
-            if (Data is WeaponData) return ItemType.Weapon;
-            if (Data is HelmetData) return ItemType.Helmet;
             if (Data is ArmorData) return ItemType.Armor;
-            // 默认回退为 Weapon，仅作保底
-            return ItemType.Weapon;
+            if (Data is HelmetData) return ItemType.Helmet;
+            if (Data is MeleeWeaponData) return ItemType.MeleeWeapon;
+            if (Data is RangedWeaponData) return ItemType.RangedWeapon;
+            // 默认回退（不建议用）：返回 Armor
+            return ItemType.Armor;
         }
     }
 
     /// <summary>
-    /// 根据 Data 的类型，调用目标身上的不同“切换器”来执行 Equip/Use 逻辑
+    /// 根据 Data 的类型，调用目标身上的不同“切换器”或“触发器”来执行 Equip/Use 逻辑
     /// </summary>
     public override void Use(GameObject target)
     {
-        // 武器装备逻辑
-        if (Data is WeaponData)
+        if (target == null)
         {
-            var weaponSwitcher = target.GetComponent<WeaponSwitcher>();
-            if (weaponSwitcher != null)
-                weaponSwitcher.SwitchTo(this);
-            else
-                Debug.LogWarning("[EquipmentItem] 找不到 WeaponSwitcher，无法装备武器。");
+            Debug.LogWarning("[EquipmentItem] Use 收到 null GameObject，跳过。");
+            return;
         }
-        // 头盔装备逻辑
-        else if (Data is HelmetData)
+
+        // 直接从目标身上拿 WeaponSwitcher（不再拆分 Armor/Helmet/Melee/Ranged）
+        var weaponSwitcher = target.GetComponent<WeaponSwitcher>();
+        if (weaponSwitcher != null)
         {
-            var helmetSwitcher = target.GetComponent<WeaponSwitcher>();
-            if (helmetSwitcher != null)
-                helmetSwitcher.SwitchTo(this);
-            else
-                Debug.LogWarning("[EquipmentItem] 找不到 HelmetSwitcher，无法装备头盔。");
-        }
-        // 护甲装备逻辑
-        else if (Data is ArmorData)
-        {
-            var armorSwitcher = target.GetComponent<WeaponSwitcher>();
-            if (armorSwitcher != null)
-                armorSwitcher.SwitchTo(this);
-            else
-                Debug.LogWarning("[EquipmentItem] 找不到 ArmorSwitcher，无法装备护甲。");
+            // 只要把当前这个 EquipmentItem（this）传给 SwitchTo，让后续 EquipWeapon 去做类型分支
+            weaponSwitcher.SwitchTo(this);
         }
         else
         {
-            Debug.LogWarning($"[EquipmentItem] 不支持的可装备类型：{Data.GetType().Name}");
+            Debug.LogWarning($"[EquipmentItem] 无法在目标物体上找到 WeaponSwitcher，无法装备物品 (ID: {ItemID}, Name: {DisplayName})。");
         }
     }
+
 }

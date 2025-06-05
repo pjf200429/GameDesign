@@ -28,10 +28,9 @@ public class AttackEffectController : MonoBehaviour
     public void PlayAttackEffect()
     {
         if (_currentEquipment == null) return;
-        WeaponData data = _currentEquipment.Data as WeaponData;
+        MeleeWeaponData data = _currentEquipment.Data as MeleeWeaponData;
         if (data == null) return;
 
-        // 1) 播放粒子特效（如果有）
         if (data.effectPrefab != null && effectSpawnPoint != null)
         {
             var fx = Instantiate(
@@ -43,8 +42,6 @@ public class AttackEffectController : MonoBehaviour
                 ps.Play();
             Destroy(fx, data.effectDuration);
         }
-
-        // 2) 播放音效（如果有）
         if (data.attackSound != null)
             _audioSrc.PlayOneShot(data.attackSound);
     }

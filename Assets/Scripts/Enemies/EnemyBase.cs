@@ -101,7 +101,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     /// </summary>
     public virtual void OnAttackHitEvent()
     {
-        attackStrategy?.Attack(attackPoint);
+        attackStrategy?.Attack(attackPoint,Vector3.zero);
     }
 
     public virtual void TakeDamage(int dmg)

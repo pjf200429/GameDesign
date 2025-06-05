@@ -346,6 +346,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f2d224f25cab43c40994648921a011de, type: 2}
   - {fileID: 11400000, guid: c0a5214c6b61d654488e3777e7f64656, type: 2}
   - {fileID: 11400000, guid: 2cc7f0017bfdf3b439d02e96ccf6491e, type: 2}
+  AllRangedWeapons:
+  - {fileID: 11400000, guid: 0f66b38f4870c414c9dcda915182bcc2, type: 2}
+  - {fileID: 11400000, guid: be1d27b4a3cc31f4786343cc2bd856f7, type: 2}
   AllConsumables:
   - {fileID: 11400000, guid: 945b026ee8922dc47b24bfa2b85089c4, type: 2}
   - {fileID: 11400000, guid: e913e0e1fe76c074589fc48c6be49fed, type: 2}
@@ -368,7 +371,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46861cf8e472e51438cb9f7c848caed5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemCount: 4
+  itemCount: 3
 --- !u!1 &448941365
 GameObject:
   m_ObjectHideFlags: 0
@@ -568,10 +571,6 @@ PrefabInstance:
     - target: {fileID: 7142244676392793703, guid: 3d3cddfa68b2eb045a53e3ec066d2e1b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7456759904972405013, guid: 3d3cddfa68b2eb045a53e3ec066d2e1b, type: 3}
-      propertyPath: m_Radius
-      value: 0.26
       objectReference: {fileID: 0}
     - target: {fileID: 7903552153921486804, guid: 3d3cddfa68b2eb045a53e3ec066d2e1b, type: 3}
       propertyPath: deathY

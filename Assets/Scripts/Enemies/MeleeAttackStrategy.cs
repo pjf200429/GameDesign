@@ -36,7 +36,7 @@ public class MeleeAttackStrategy : IWeaponStrategy
     /// <summary>
     /// 发起一次打击
     /// </summary>
-    public void Attack(Transform attackPoint)
+    public void Attack(Transform attackPoint, Vector3 destination)
     {
         // 计算检测中心（考虑朝向偏移）
         Vector2 localOffset = new Vector2(
