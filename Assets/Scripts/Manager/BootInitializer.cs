@@ -3,8 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class BootInitializer : MonoBehaviour
 {
-    [Header("Initial Scene Settings")]
-    public string firstSceneName = "Home";
+   
 
     private void Awake()
     {
@@ -13,8 +12,7 @@ public class BootInitializer : MonoBehaviour
 
       
 
-        // Load the first actual room scene
-        SceneManager.LoadScene(firstSceneName);
+       
     }
 }
 

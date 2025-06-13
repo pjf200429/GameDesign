@@ -52,44 +52,38 @@ public class PlayerInventory : MonoBehaviour
     {
         if (item == null)
         {
-            Debug.LogWarning("[PlayerInventory] AddItem 传入了 null，跳过。");
+   
             return false;
         }
 
         // 如果背包有限制且已满
         if (maxSlots > 0 && _items.Count >= maxSlots)
         {
-            Debug.LogWarning("[PlayerInventory] 背包已满，无法添加：" + item.DisplayName);
+           
             return false;
         }
 
-        // 如果是 ConsumableItem，需要判断是否与已有同 ID 项目合并堆叠
+ 
         if (item is ConsumableItem consumable)
         {
-            // 找到背包里第一个相同 ID 的 ConsumableItem
+          
             var existing = _items.Find(x => x.ItemID == consumable.ItemID) as ConsumableItem;
             if (existing != null)
             {
-                // 合并堆叠：只增加数量，不新增列表项
+             
                 existing.AddQuantity(consumable.Quantity);
-                Debug.Log($"[PlayerInventory] 堆叠消耗品：{existing.DisplayName} 数量 += {consumable.Quantity}，当前数量 = {existing.Quantity}");
-                // 触发背包变化事件并返回
+           
+         
                 OnInventoryChanged?.Invoke();
                 return true;
             }
         }
 
-        // 否则，直接添加到列表中
+       
         _items.Add(item);
-        Debug.Log($"[PlayerInventory] 添加物品：{item.DisplayName} (ID: {item.ItemID})");
+       
 
-        //// 如果添加的是武器，且当前还没有装备，则默认自动装备（可根据需求删掉此段）
-        //if (item is EquipmentItem equip && _equippedWeapon == null)
-        //{
-        //    EquipWeapon(equip);
-        //}
-
-        // 触发背包变化事件
+       
         OnInventoryChanged?.Invoke();
         return true;
     }
@@ -156,7 +150,7 @@ public class PlayerInventory : MonoBehaviour
         }
         else if (item is EquipmentItem equip)
         {
-          
+            Debug.Log($"[PlayerInventory] {equip.DisplayName} ");
             item.Use(target);
         }
 
@@ -201,7 +195,7 @@ public class PlayerInventory : MonoBehaviour
     {
         _items.Clear();
         _equippedWeapon = null;
-        Debug.Log("[PlayerInventory] 背包已清空。");
+  
         // 触发背包变化事件
         OnInventoryChanged?.Invoke();
     }

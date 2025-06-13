@@ -97,6 +97,8 @@ public class MeleeEnemy : EnemyBase
         {
             rb.velocity = new Vector2(0f, rb.velocity.y);
             currentState = BaseState.Idle;
+          
+          
         }
         else if (dist <= detectionRange)
         {
@@ -154,15 +156,16 @@ public class MeleeEnemy : EnemyBase
         }
     }
 
-    // Override to pass the correct facing direction to the attack strategy
+    
     public override void OnAttackHitEvent()
     {
+ 
         if (attackStrategy is MeleeAttackStrategy melee)
             melee.SetFacingDirection(_facingRight);
         base.OnAttackHitEvent();
     }
 
-    // Override TakeDamage: apply defense reduction, then call base implementation
+   
     public override void TakeDamage(int dmg)
     {
         int reduction = Mathf.FloorToInt(defense * 0.2f);

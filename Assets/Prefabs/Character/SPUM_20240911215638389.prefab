@@ -1352,7 +1352,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &1198147507218678979
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3672,7 +3672,7 @@ CircleCollider2D:
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0.08}
   serializedVersion: 2
-  m_Radius: 0.26
+  m_Radius: 0.3
 --- !u!1 &7891434216535841164
 GameObject:
   m_ObjectHideFlags: 0
@@ -5233,6 +5233,8 @@ GameObject:
   - component: {fileID: 2430605580893717790}
   - component: {fileID: 7767914131408082976}
   - component: {fileID: 3599753408540097520}
+  - component: {fileID: 8300259058078210810}
+  - component: {fileID: 8255669046027244047}
   m_Layer: 11
   m_Name: SPUM_20240911215638389
   m_TagString: Player
@@ -8303,7 +8305,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!114 &7903552153921486804
 MonoBehaviour:
@@ -8318,7 +8320,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxJumps: 2
-  deathY: -200
+  deathY: -1000
   groundCheckOffset: {x: 0, y: -0.5}
   groundCheckRadius: 0.2
   groundLayer:
@@ -8526,14 +8528,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 200
-  attack: 10
   helmetDefense: 0
   armorDefense: 0
   defenseMultiplier: 0.2
   movementSpeed: 5
-  jumpHeight: 2
+  jumpHeight: 3
   attackMultiplier: 1
   currency: 0
+  coin: 0
+  equippedWeaponID: 
+  equippedArmorID: 
+  equippedHelmetID: 
+  teleportHealth: 0
+  currentScore: 0
+  maxScore: 0
+  spum: {fileID: 6261796563030548420}
 --- !u!114 &3599753408540097520
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8544,6 +8553,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e32cc01c997e554095c7d8f21de3c85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8300259058078210810
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8895126512435727022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08aeb3495e6d2c84ebb592f4fbd8ba95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8255669046027244047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8895126512435727022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffc601cd18cdb1c46a535ade64791f97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &9127372357307772330

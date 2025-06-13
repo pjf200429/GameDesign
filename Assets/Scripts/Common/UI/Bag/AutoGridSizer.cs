@@ -9,7 +9,7 @@ public class AutoGridSizer : MonoBehaviour
     public int columns = 5;
     public Vector2 spacing = new Vector2(5, 5);
 
-    // 不在这里直接初始化 Unity 相关属性
+
     public RectOffset padding;
 
     private GridLayoutGroup gridLayoutGroup;
@@ -17,7 +17,7 @@ public class AutoGridSizer : MonoBehaviour
 
     private void Awake()
     {
-        // 在 Awake 中获取组件引用，且可在此时初始化 padding
+
         gridLayoutGroup = GetComponent<GridLayoutGroup>();
         rectTransform = GetComponent<RectTransform>();
 

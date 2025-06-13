@@ -9,7 +9,7 @@ public class RangedAttack : IWeaponStrategy
 {
     private GameObject projectilePrefab;   // Prefab for the projectile GameObject
     private GameObject hitEffectPrefab;    // Prefab for the hit effect (can be null)
-    private int baseDamage;                // Base damage dealt by the projectile
+    private float baseDamage;                // Base damage dealt by the projectile
     private float projectileSpeed;         // Speed at which the projectile moves
     private float maxRange;                // Maximum travel distance of the projectile
     private LayerMask targetLayers;        // Layers that the projectile can hit
@@ -42,6 +42,7 @@ public class RangedAttack : IWeaponStrategy
         this.maxRange = maxRange;
         this.targetLayers = targetLayers;
         this.hitEffectDuration = hitEffectDuration;
+
     }
 
   
@@ -57,7 +58,12 @@ public class RangedAttack : IWeaponStrategy
     /// Transform that determines spawn position (e.g., a firePoint on the player).
     /// </param>
     public void Attack(Transform attackOrigin, Vector3 targetPos)
+
     {
+        PlayerAttributes attrs = attackOrigin.GetComponentInParent<PlayerAttributes>();
+        float multiplier = attrs != null ? attrs.AttackMultiplier : 1f;
+        baseDamage = baseDamage * multiplier;
+
         if (projectilePrefab == null)
         {
             Debug.LogWarning("[RangedAttack] projectilePrefab is null; cannot fire.");
@@ -74,7 +80,7 @@ public class RangedAttack : IWeaponStrategy
             // 如果目标就在挂点位置，默认为向右
             dirVector = Vector3.right;
         }
-        Debug.Log($"[RangedAttack] 方向向量 = {dirVector}");
+
 
         // 3) 实例化子弹 Prefab，rotation 始终为 identity
         GameObject projGO = Object.Instantiate(projectilePrefab, spawnPos, Quaternion.identity);
@@ -89,12 +95,14 @@ public class RangedAttack : IWeaponStrategy
         if (rb != null)
         {
             rb.velocity = dirVector * projectileSpeed;
-            Debug.Log($"[RangedAttack] 设置子弹速度 = {rb.velocity}");
+
         }
         else
         {
             Debug.LogWarning("[RangedAttack] 子弹实例缺少 Rigidbody2D 组件，无法设置速度。");
         }
+
+    
 
         // 6) 初始化 ProjectileController，传入剩余参数
         var projCtrl = projGO.GetComponent<ProjectileController>();

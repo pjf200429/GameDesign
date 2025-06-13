@@ -25,14 +25,13 @@ public class WeaponSwitcher : MonoBehaviour
     {
         if (item == null)
         {
-            Debug.LogWarning("[WeaponSwitcher] SwitchTo 收到 null，忽略。");
+     
             return;
         }
 
         if (_playerCombat != null)
         {
-            // 打印调试信息：输出武器的名字
-            Debug.Log($"[WeaponSwitcher] 正在装备武器：{item.DisplayName} (ID:{item.ItemID})");
+            
             _playerCombat.EquipWeapon(item);
         }
         else

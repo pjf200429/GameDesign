@@ -8,6 +8,7 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
     [Header("Health Settings")]
     public Slider slider;
     private int currentHealth;
+  
 
     [Header("UI Elements")]
     public TextMeshProUGUI healthText;
@@ -30,14 +31,15 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
 
     void Start()
     {
-        // 使用属性中定义的最大生命值进行初始化
+
         if (playerAttributes != null)
         {
-            currentHealth = playerAttributes.MaxHealth;
+            currentHealth = playerAttributes.GetTeleportHealth();
+           
         }
         else
         {
-            currentHealth = 100; 
+            return;
         }
 
         UpdateHealthUI();
@@ -45,7 +47,7 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
 
     void Update()
     {
-       
+     
     }
 
     void LateUpdate()
@@ -74,16 +76,18 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
         currentHealth -= effectiveDamage;
         currentHealth = Mathf.Max(currentHealth, 0);
 
-        Debug.Log($"[PlayerHealthController] TakeDamage: 原始伤害={damage}, 防御减免={reduction}, 实际伤害={effectiveDamage}");
 
         UpdateHealthUI();
 
         if (currentHealth <= 0)
+        {
+            playerAttributes.setCurrentScore(-300);
             OnPlayerDied?.Invoke();
+        }
     }
 
     /// <summary>
-    /// 回复生命
+    /// Recovery
     /// </summary>
     public void Heal(int amount)
     {
@@ -95,7 +99,7 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
     }
 
     /// <summary>
-    /// 重置生命（通常在重生时调用）
+    /// Reset 
     /// </summary>
     public void ResetHealth()
     {
@@ -105,7 +109,7 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
         UpdateHealthUI();
     }
 
-    private void UpdateHealthUI()
+    public void UpdateHealthUI()
     {
         if (playerAttributes == null)
             return;
@@ -126,5 +130,9 @@ public class PlayerHealthController : MonoBehaviour, IDamageable
                 : Color.Lerp(Color.red, Color.yellow, percent * 2f);
             fillImage.color = c;
         }
+    }
+    public int getCurrentHealth
+    {
+        get { return currentHealth; }
     }
 }

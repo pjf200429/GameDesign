@@ -3,7 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(AudioSource))]
 public class AttackEffectController : MonoBehaviour
 {
-    [Header("特效挂点（通常挂在武器尖端）")]
+    [Header("Effect point")]
     public Transform effectSpawnPoint;
 
     AudioSource _audioSrc;
@@ -14,17 +14,13 @@ public class AttackEffectController : MonoBehaviour
         _audioSrc = GetComponent<AudioSource>();
     }
 
-    /// <summary>
-    /// 切换武器时由外部（如 PlayerCombat）调用
-    /// </summary>
+   
     public void SetCurrentWeapon(ItemBase item)
     {
         _currentEquipment = item as EquipmentItem;
     }
 
-    /// <summary>
-    /// Animation Event 或 PlayerCombat 在关键帧时调用
-    /// </summary>
+    
     public void PlayAttackEffect()
     {
         if (_currentEquipment == null) return;

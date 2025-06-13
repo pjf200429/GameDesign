@@ -1,5 +1,5 @@
-
 using UnityEngine;
+using System.Linq;
 
 public abstract class EnemyBase : MonoBehaviour, IDamageable
 {
@@ -7,10 +7,10 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     public Transform attackPoint;        // Attack detection point
     public float attackCooldown = 1f;    // Attack cooldown in seconds
     protected IWeaponStrategy attackStrategy;
-    private float _lastAttackTime = -999f;
+    protected float _lastAttackTime = -999f;  // Time when TriggerAttack was last called
 
     [Header("Animation (SPUM)")]
-    public SPUM_Prefabs spum;
+    public SPUM_Prefabs spum;            // SPUM system reference (used to play animations)
 
     [Header("Death Settings")]
     public float deathY = -10f;          // Y position below which enemy dies
@@ -18,13 +18,16 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     [Header("Drop Settings")]
     [Tooltip("Amount of gold dropped when this enemy dies")]
     public int goldDrop = 0;
+     public int scoreDrop = 0;
+
+    public ScoreManager scoreManager;
 
     protected bool isDead;
     protected enum BaseState { Idle, Moving, Damaged, Dead }
     protected BaseState currentState = BaseState.Idle;
 
     // Cached component references
-    private EnemyHealthController _healthController;
+    protected EnemyHealthController _healthController;
     protected Rigidbody2D rb;
 
     protected virtual void Awake()
@@ -34,6 +37,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         if (_healthController != null)
             _healthController.OnEnemyDied += HandleDeath;
 
+        // Initialize SPUM if present
         spum?.OverrideControllerInit();
         InitializeAttackStrategy();
     }
@@ -43,6 +47,8 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         if (_healthController != null)
             _healthController.OnEnemyDied -= HandleDeath;
     }
+
+    private BaseState _lastState;  
 
     protected virtual void Update()
     {
@@ -54,8 +60,18 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
             return;
         }
 
+        // Debug only when state changes
+        if (currentState != _lastState)
+        {
+        
+            _lastState = currentState;
+        
+        }
+        
+
         switch (currentState)
         {
+
             case BaseState.Idle:
                 UpdateIdle();
                 break;
@@ -63,17 +79,20 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
                 UpdateMoving();
                 break;
             case BaseState.Damaged:
-                // Paused while damaged
+                break;
+            case BaseState.Dead:
                 break;
         }
     }
 
-    private void UpdateIdle()
+
+    protected virtual void UpdateIdle()
     {
         PlayAnimation(PlayerState.IDLE);
-
-        if (CanAttack() && ShouldAttack())
+        if (ShouldAttack()&&Time.time -_lastAttackTime > attackCooldown)
+        {
             TriggerAttack();
+        }
         else if (ShouldMove())
             currentState = BaseState.Moving;
     }
@@ -82,26 +101,74 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     {
         PlayAnimation(PlayerState.MOVE);
 
-        if (CanAttack() && ShouldAttack())
+        if (ShouldAttack() && Time.time - _lastAttackTime > attackCooldown)
+        {
+           
             TriggerAttack();
+        }
         else
             PerformMovement();
     }
 
-    private bool CanAttack() => Time.time - _lastAttackTime >= attackCooldown;
 
-    private void TriggerAttack()
+    /// <summary>
+    /// TriggerAttack immediately records the cooldown start time, then adjusts animation speed 
+    /// so that the attack animation duration is never longer than attackCooldown.
+    /// </summary>
+    protected virtual void TriggerAttack()
     {
+        // 1) Record the time when this attack was triggered
         _lastAttackTime = Time.time;
+
+        // 2) Attempt to find an Animator in this GameObject or its children
+        Animator anim = GetComponentInChildren<Animator>();
+      
+        if (anim != null)
+        {
+           
+            // Find the first animation clip whose name contains "attack"
+            var clips = anim.runtimeAnimatorController.animationClips;
+            AnimationClip attackClip = clips.FirstOrDefault(c => c.name.ToLower().Contains("attack"));
+
+            if (attackClip != null)
+            {
+             
+                float clipLength = attackClip.length;
+                if (attackCooldown < clipLength)
+                {
+                    // If cooldown is shorter than clip length, speed up the animation
+                    anim.speed = clipLength / attackCooldown;
+                }
+                else
+                {
+                    // Otherwise, play at normal speed
+                    anim.speed = 1f;
+                }
+            }
+            else
+            {
+                // If no "attack" clip found, default to normal speed
+                anim.speed = 1f;
+                Debug.LogWarning("[EnemyBase] No AnimationClip containing 'attack' found; using normal speed.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[EnemyBase] No Animator found in children; cannot adjust attack animation speed.");
+        }
+       
+        // 3) Play the attack animation via SPUM system
         PlayAnimation(PlayerState.ATTACK);
     }
 
     /// <summary>
-    /// Animation Event calls this method when attack animation hits. Subclasses may override to pass facing direction first.
+    /// This method is called by an Animation Event when the hit frame is reached.
+    /// It actually deals damage or fires a projectile, but does not modify cooldown.
     /// </summary>
     public virtual void OnAttackHitEvent()
     {
-        attackStrategy?.Attack(attackPoint,Vector3.zero);
+   
+        attackStrategy?.Attack(attackPoint, Vector3.zero);
     }
 
     public virtual void TakeDamage(int dmg)
@@ -112,7 +179,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         Invoke(nameof(ResumeFromDamaged), 0.5f);
     }
 
-    private void ResumeFromDamaged()
+    protected void ResumeFromDamaged()
     {
         if (!isDead)
             currentState = BaseState.Idle;
@@ -124,23 +191,12 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         isDead = true;
 
         // Drop gold to player when enemy dies
-        var playerGO = GameObject.FindWithTag("Player");
-        if (playerGO != null)
+        scoreManager = FindObjectOfType<ScoreManager>();
+        if (scoreManager != null)
         {
-            var attrs = playerGO.GetComponent<PlayerAttributes>();
-            if (attrs != null)
-            {
-                attrs.AddCurrency(goldDrop);
-                Debug.Log($"[EnemyBase] Enemy {name} died and dropped {goldDrop} gold.");
-            }
-            else
-            {
-                Debug.LogWarning("[EnemyBase] Found Player object but missing PlayerAttributes component; cannot add gold.");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("[EnemyBase] Could not find GameObject tagged 'Player'; cannot drop gold.");
+
+            scoreManager.AddCurrency(goldDrop);
+            scoreManager.AddScore(scoreDrop);
         }
 
         PlayAnimation(PlayerState.DEATH);
@@ -149,6 +205,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
 
     protected void PlayAnimation(PlayerState state)
     {
+        // Use SPUM system to play the specified animation
         spum?.PlayAnimation(state, 0);
     }
 

@@ -41,13 +41,13 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        // 记录一下下一步要加载的场景名
-        _nextSceneName = currentStageRooms[currentRoomIndex];
-        Debug.Log($"[RoomManager] 开始加载房间：{_nextSceneName} (索引 {currentRoomIndex})");
 
-        // 同步加载
+        _nextSceneName = currentStageRooms[currentRoomIndex];
+        Debug.Log($"[RoomManager] start loading room：{_nextSceneName} (Index {currentRoomIndex})");
+
+
         SceneManager.LoadScene(_nextSceneName);
-        // 这里不要再立即找和移动玩家，等 OnSceneLoaded 回调
+
     }
 
     public bool LoadNextRoom()
@@ -62,14 +62,14 @@ public class RoomManager : MonoBehaviour
         return false;
     }
 
-    // 场景加载完成后 Unity 自动调用
+
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // 只回应我们刚才请求的那个场景
+ 
         if (scene.name != _nextSceneName)
             return;
 
-        // 找到新场景里的 RespawnPoint
+
         var rpGo = GameObject.FindGameObjectWithTag("RespawnPoint");
         if (rpGo == null)
         {
@@ -77,7 +77,7 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        // 找到持久化的 Player
+  
         var playerGo = GameObject.FindGameObjectWithTag("Player");
         if (playerGo == null)
         {
@@ -85,8 +85,8 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        // 最终移动
+    
         playerGo.transform.position = rpGo.transform.position;
-        Debug.Log($"[RoomManager] 玩家已在场景“{scene.name}”的 RespawnPoint 复位");
+ 
     }
 }

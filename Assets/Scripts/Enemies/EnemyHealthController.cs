@@ -7,7 +7,7 @@ using System;
 public class EnemyHealthController : MonoBehaviour
 {
     public Slider slider;
-    public int maxHealth = 100;
+    public int maxHealth = 500;
     private int currentHealth;
 
     public TextMeshProUGUI healthText;
@@ -15,9 +15,15 @@ public class EnemyHealthController : MonoBehaviour
 
     public event Action OnEnemyDied;
 
+    private float _lastDamageTime;  
+
+    public int CurrentHealth => currentHealth;
+    public int MaxHealth => maxHealth;
+
     void Start()
     {
         currentHealth = maxHealth;
+        _lastDamageTime = Time.time;
         UpdateHealthUI();
     }
 
@@ -26,21 +32,25 @@ public class EnemyHealthController : MonoBehaviour
        
     }
 
-    /// <summary>
-    /// 被扣血时调用，此处直接扣减“传入的”damage，不再做其它减免
-    /// </summary>
+    
     public void TakeDamage(int damage)
     {
         currentHealth -= damage;
         currentHealth = Mathf.Max(currentHealth, 0);
         UpdateHealthUI();
-
+        _lastDamageTime = Time.time;
         if (currentHealth <= 0)
         {
             OnEnemyDied?.Invoke();
         }
     }
 
+    public float GetLastDamageTime()
+    {
+        float temp = _lastDamageTime;
+     
+        return temp;
+    }
     public void ResetHealth()
     {
         currentHealth = maxHealth;

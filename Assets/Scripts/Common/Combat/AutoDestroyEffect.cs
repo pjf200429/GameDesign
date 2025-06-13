@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class AutoDestroyEffect : MonoBehaviour
 {
-    [Tooltip("特效生存时间（秒）")]
+    [Tooltip("Effect duration")]
     public float lifeTime = 0.5f;
 
     void Start()

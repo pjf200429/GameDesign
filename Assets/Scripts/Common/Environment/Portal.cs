@@ -1,16 +1,19 @@
+// Portal.cs
 using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(Collider2D))]
 public class Portal : MonoBehaviour
 {
-    [Header("到下一个房间前的延迟（秒）")]
+    [Header("Delay before teleport (seconds)")]
     public float delay = 0.2f;
 
-    [Header("是否在传送后关闭本房间")]
+    [Header("Deactivate current room after teleport")]
     public bool deactivateCurrentRoom = true;
 
     bool _triggered = false;
+
+    private ScoreManager scoreManager;
     Collider2D _col;
 
     void Awake()
@@ -18,17 +21,14 @@ public class Portal : MonoBehaviour
         _col = GetComponent<Collider2D>();
         if (_col != null)
             _col.isTrigger = true;
+        scoreManager = FindObjectOfType<ScoreManager>();
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        // 只对 Player 生效，且只触发一次
         if (_triggered || !other.CompareTag("Player")) return;
-
         _triggered = true;
-        Debug.Log("[Portal] 玩家进入传送门，准备跳转下一个房间…");
-
-        // 开始协程，延迟调用下一个房间
+        Debug.Log("[Portal] Player entered portal, teleporting...");
         StartCoroutine(DoTeleport(other.gameObject));
     }
 
@@ -36,32 +36,55 @@ public class Portal : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
 
-        // 调用 LevelManager 切换房间／阶段
+        // Get current health from PlayerHealthController
+        var healthCtrl = player.GetComponent<PlayerHealthController>();
+        var attr = player.GetComponent<PlayerAttributes>();
+
+        if (healthCtrl != null && attr != null)
+        {
+            int curHealth = healthCtrl.getCurrentHealth;
+            attr.SetTeleportHealth(curHealth);
+
+            // Transfer score and currency from ScoreManager to PlayerAttributes
+            
+            if (scoreManager != null)
+            {
+                // Pass the score and currency to PlayerAttributes
+                attr.ReceiveScoreAndCurrency(scoreManager.Score, scoreManager.Currency);
+                // Reset the score and currency in ScoreManager
+                scoreManager.Reset();
+            }
+            else
+            {
+                Debug.LogWarning("[Portal] Missing ScoreManager script on Player.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[Portal] Missing PlayerHealthController or PlayerAttributes.");
+        }
+
+        // Switch room/stage
         var lm = FindObjectOfType<LevelManager>();
         if (lm != null)
         {
             lm.NextRoomOrStage();
-            Debug.Log("[Portal] 已请求切换到下一个房间。");
+            Debug.Log("[Portal] Requested next room.");
         }
         else
         {
-            Debug.LogError("[Portal] 未找到 LevelManager，无法切换房间！");
+            Debug.LogError("[Portal] LevelManager not found!");
         }
 
-        // 可选：把当前房间 GameObject（通常是根节点）禁用
         if (deactivateCurrentRoom)
         {
-            var roomRoot = transform.root.gameObject;
-            roomRoot.SetActive(false);
-            Debug.Log("[Portal] 已关闭当前房间。");
+            transform.root.gameObject.SetActive(false);
+            Debug.Log("[Portal] Current room deactivated.");
         }
 
-        // 禁用自己，避免重复触发
         gameObject.SetActive(false);
     }
+
+
+
 }
-
-
-
-
-

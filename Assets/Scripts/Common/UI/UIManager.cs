@@ -1,37 +1,36 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// 全局唯一的 UI 管理器 (UIManager)：
-/// 1. 管理背包面板的打开/关闭；
-/// 2. 管理商店主面板（ShopCanvas）的打开/关闭，但不管商店内部逻辑；
-/// 3. 在切换到 ShopRoom 场景时，自动查找并缓存 ShopCanvas，当离开该场景时隐藏并置空；  
-/// </summary>
+
 public class UIManager : MonoBehaviour
 {
-    // 单例
+
     public static UIManager Instance { get; private set; }
 
     [Header("背包面板（在 Inspector 中赋值）")]
     public GameObject inventoryCanvas;
 
-    // 商店主 Canvas（在 ShopRoom 场景加载时动态查找，无需在 Inspector 赋值）
+
     private GameObject shopCanvas;
 
-    // “商店场景” 的名字一定要和下面常量一致
+
     private const string SHOP_SCENE_NAME = "ShopRoom";
-    // “商店面板” 的根 GameObject 名称必须和下面常量一致
+
     private const string SHOP_CANVAS_NAME = "ShopCanvas";
+
+    [Header("Score UI")]
+    [SerializeField] public GameObject scoreAndCurrencyCanvas;  // Score and Currency UI Canvas
+    [SerializeField] public GameObject settlementCanvas;         // Settlement UI Canvas
+
 
     private void Awake()
     {
-        // 单例检查
+        
         if (Instance == null)
         {
             Instance = this;
            
 
-            // 确保背包一开始隐藏
             if (inventoryCanvas != null)
             {
                 inventoryCanvas.SetActive(false);
@@ -41,16 +40,26 @@ public class UIManager : MonoBehaviour
                 Debug.LogError("[UIManager] Awake: inventoryCanvas 未赋值！");
             }
 
-            // 一开始没有 ShopCanvas 的引用
-            shopCanvas = null;
 
-            // 监听场景加载
+            shopCanvas = null;
+            if (scoreAndCurrencyCanvas != null)
+            {
+                scoreAndCurrencyCanvas.SetActive(false);  
+            }
+            if (settlementCanvas != null)
+            {
+                settlementCanvas.SetActive(false);  
+            }
+
+
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
             Destroy(gameObject);
         }
+
+     
     }
 
     private void OnDestroy()
@@ -59,11 +68,7 @@ public class UIManager : MonoBehaviour
             SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    /// <summary>
-    /// 每次新场景加载完毕后都会调用：
-    /// 如果加载的是 ShopRoom 场景，则尝试查找名为 “ShopCanvas” 的 GameObject 并隐藏它；
-    /// 如果当前不是 ShopRoom 场景，则把 shopCanvas 隐藏并置为 null 以便 GC。
-    /// </summary>
+  
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name == SHOP_SCENE_NAME)
@@ -90,6 +95,14 @@ public class UIManager : MonoBehaviour
                 shopCanvas.SetActive(false);
             }
             shopCanvas = null;
+        }
+        if (scene.name != "Home" && scoreAndCurrencyCanvas != null)
+        {
+            scoreAndCurrencyCanvas.SetActive(true);
+        }
+        if (scene.name== "Home" && scoreAndCurrencyCanvas != null)
+        {
+            scoreAndCurrencyCanvas.SetActive(false);
         }
     }
 

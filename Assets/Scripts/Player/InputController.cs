@@ -6,17 +6,22 @@ public class InputController : MonoBehaviour
 
     private void Awake()
     {
-        // 在场景中查找 PlayerInventory（假设场景里有一个挂了该脚本的玩家物体）
+        // Find PlayerInventory in the scene (assumes one exists on your player object)
         _playerInventory = FindObjectOfType<PlayerInventory>();
         if (_playerInventory == null)
         {
-            Debug.LogError("[InputController] 找不到 PlayerInventory，请确认场景中有一个对象挂了 PlayerInventory 组件。");
+            Debug.LogError("[InputController] PlayerInventory not found - make sure a PlayerInventory component exists in the scene.");
         }
     }
 
     private void Update()
     {
-        // 切换背包界面（原本功能）
+        //_playerInventory = FindObjectOfType<PlayerInventory>();
+        //if (_playerInventory == null)
+        //{
+        //    Debug.LogError("[InputController] PlayerInventory not found - make sure a PlayerInventory component exists in the scene.");
+        //}
+        // Toggle inventory UI
         if (Input.GetKeyDown(KeyCode.B))
         {
             if (UIManager.Instance != null)
@@ -25,7 +30,22 @@ public class InputController : MonoBehaviour
             }
         }
 
-        // 按下 F1：尝试获得 Sword01
+        // Press P: print all items in backpack
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            if (_playerInventory == null) return;
+
+            Debug.Log("=== Backpack Contents ===");
+            foreach (var item in _playerInventory.Items)
+            {
+                if (item != null)
+                    Debug.Log($"- {item.DisplayName} (ID: {item.ItemID})");
+                else
+                    Debug.Log("- null item");
+            }
+        }
+
+        // Press F1: add Sword01
         if (Input.GetKeyDown(KeyCode.F1))
         {
             if (_playerInventory == null) return;
@@ -33,19 +53,18 @@ public class InputController : MonoBehaviour
             ItemBase sword1 = ItemDatabase.Instance.CreateItem("Sword01");
             if (sword1 != null)
             {
-                bool added = _playerInventory.AddItem(sword1);
-                if (added)
-                    Debug.Log("[InputController] 已将 Sword01 添加到背包。");
+                if (_playerInventory.AddItem(sword1))
+                    Debug.Log("[InputController] Added Sword01 to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Sword01。");
+                    Debug.LogWarning("[InputController] Could not add Sword01 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Sword01 的武器，请确认 WeaponData 已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing WeaponData with ID = Sword01.");
             }
         }
 
-        // 按下 F2：尝试获得 Sword02
+        // Press F2: add Sword02
         if (Input.GetKeyDown(KeyCode.F2))
         {
             if (_playerInventory == null) return;
@@ -53,19 +72,18 @@ public class InputController : MonoBehaviour
             ItemBase sword2 = ItemDatabase.Instance.CreateItem("Sword02");
             if (sword2 != null)
             {
-                bool added = _playerInventory.AddItem(sword2);
-                if (added)
-                    Debug.Log("[InputController] 已将 Sword02 添加到背包。");
+                if (_playerInventory.AddItem(sword2))
+                    Debug.Log("[InputController] Added Sword02 to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Sword02。");
+                    Debug.LogWarning("[InputController] Could not add Sword02 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Sword02 的武器，请确认 WeaponData 已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing WeaponData with ID = Sword02.");
             }
         }
 
-        // 按下 F3：尝试获得 Portion01（Restoration portion 消耗品）
+        // Press F3: add Portion01 (Restoration potion)
         if (Input.GetKeyDown(KeyCode.F3))
         {
             if (_playerInventory == null) return;
@@ -73,19 +91,18 @@ public class InputController : MonoBehaviour
             ItemBase portion = ItemDatabase.Instance.CreateItem("Portion01");
             if (portion != null)
             {
-                bool added = _playerInventory.AddItem(portion);
-                if (added)
-                    Debug.Log("[InputController] 已将 Portion01（Restoration portion）添加到背包。");
+                if (_playerInventory.AddItem(portion))
+                    Debug.Log("[InputController] Added Portion01 (Restoration potion) to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Portion01（Restoration portion）。");
+                    Debug.LogWarning("[InputController] Could not add Portion01 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Portion01，请确认 ConsumableData 已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing ConsumableData with ID = Portion01.");
             }
         }
 
-        // 按下 F4：尝试获得 攻击药水（AttackPotion）
+        // Press F4: add Portion02 (Attack potion)
         if (Input.GetKeyDown(KeyCode.F4))
         {
             if (_playerInventory == null) return;
@@ -93,19 +110,18 @@ public class InputController : MonoBehaviour
             ItemBase atkPotion = ItemDatabase.Instance.CreateItem("Portion02");
             if (atkPotion != null)
             {
-                bool added = _playerInventory.AddItem(atkPotion);
-                if (added)
-                    Debug.Log("[InputController] 已将 AttackPotion（攻击药水）添加到背包。");
+                if (_playerInventory.AddItem(atkPotion))
+                    Debug.Log("[InputController] Added Portion02 (Attack potion) to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 AttackPotion（攻击药水）。");
+                    Debug.LogWarning("[InputController] Could not add Portion02 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Portion02，请确认 ConsumableData（攻击药水）已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing ConsumableData with ID = Portion02.");
             }
         }
 
-        // 按下 F5：尝试获得 防御药水（DefensePotion）
+        // Press F5: add Portion03 (Defense potion)
         if (Input.GetKeyDown(KeyCode.F5))
         {
             if (_playerInventory == null) return;
@@ -113,19 +129,18 @@ public class InputController : MonoBehaviour
             ItemBase defPotion = ItemDatabase.Instance.CreateItem("Portion03");
             if (defPotion != null)
             {
-                bool added = _playerInventory.AddItem(defPotion);
-                if (added)
-                    Debug.Log("[InputController] 已将 DefensePotion（防御药水）添加到背包。");
+                if (_playerInventory.AddItem(defPotion))
+                    Debug.Log("[InputController] Added Portion03 (Defense potion) to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 DefensePotion（防御药水）。");
+                    Debug.LogWarning("[InputController] Could not add Portion03 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Portion03，请确认 ConsumableData（防御药水）已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing ConsumableData with ID = Portion03.");
             }
         }
 
-        // —— 新增：按下 F6：尝试获得 Sword03 —— 
+        // Press F6: add Sword03
         if (Input.GetKeyDown(KeyCode.F6))
         {
             if (_playerInventory == null) return;
@@ -133,19 +148,18 @@ public class InputController : MonoBehaviour
             ItemBase sword3 = ItemDatabase.Instance.CreateItem("Sword03");
             if (sword3 != null)
             {
-                bool added = _playerInventory.AddItem(sword3);
-                if (added)
-                    Debug.Log("[InputController] 已将 Sword03 添加到背包。");
+                if (_playerInventory.AddItem(sword3))
+                    Debug.Log("[InputController] Added Sword03 to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Sword03。");
+                    Debug.LogWarning("[InputController] Could not add Sword03 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Sword03 的武器，请确认 WeaponData 已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing WeaponData with ID = Sword03.");
             }
         }
 
-        // —— 新增：按下 F7：尝试获得 Armor01 —— 
+        // Press F7: add Armor01
         if (Input.GetKeyDown(KeyCode.F7))
         {
             if (_playerInventory == null) return;
@@ -153,19 +167,18 @@ public class InputController : MonoBehaviour
             ItemBase armor = ItemDatabase.Instance.CreateItem("Armor01");
             if (armor != null)
             {
-                bool added = _playerInventory.AddItem(armor);
-                if (added)
-                    Debug.Log("[InputController] 已将 Armor01（护甲）添加到背包。");
+                if (_playerInventory.AddItem(armor))
+                    Debug.Log("[InputController] Added Armor01 to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Armor01（护甲）。");
+                    Debug.LogWarning("[InputController] Could not add Armor01 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Armor01，请确认 ArmorData 已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing ArmorData with ID = Armor01.");
             }
         }
 
-        // —— 新增：按下 F8：尝试获得 Helmet01 —— 
+        // Press F8: add Helmet01
         if (Input.GetKeyDown(KeyCode.F8))
         {
             if (_playerInventory == null) return;
@@ -173,64 +186,64 @@ public class InputController : MonoBehaviour
             ItemBase helmet = ItemDatabase.Instance.CreateItem("Helmet01");
             if (helmet != null)
             {
-                bool added = _playerInventory.AddItem(helmet);
-                if (added)
-                    Debug.Log("[InputController] 已将 Helmet01（头盔）添加到背包。");
+                if (_playerInventory.AddItem(helmet))
+                    Debug.Log("[InputController] Added Helmet01 to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Helmet01（头盔）。");
+                    Debug.LogWarning("[InputController] Could not add Helmet01 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Helmet01，请确认 HelmetData 已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing HelmetData with ID = Helmet01.");
             }
         }
-        // —— 新增：按下 F9：尝试获得 Magic01 —— 
+
+        // Press F9: add Magic01 (ranged weapon)
         if (Input.GetKeyDown(KeyCode.F9))
         {
             if (_playerInventory == null) return;
 
-            ItemBase ranged01 = ItemDatabase.Instance.CreateItem("Magic01");
-            if (ranged01 != null)
+            ItemBase magic1 = ItemDatabase.Instance.CreateItem("Magic01");
+            if (magic1 != null)
             {
-                bool added = _playerInventory.AddItem(ranged01);
-                if (added)
-                    Debug.Log("[InputController] 已将 Magic01（m魔法武器）添加到背包。");
+                if (_playerInventory.AddItem(magic1))
+                    Debug.Log("[InputController] Added Magic01 (ranged weapon) to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Helmet01（头盔）。");
+                    Debug.LogWarning("[InputController] Could not add Magic01 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Magic01，请确认 HelmetData 已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing Data with ID = Magic01.");
             }
         }
-        // —— 新增：按下 F10：尝试获得 Magic02—— 
+
+        // Press F10: add Magic02 (ranged weapon)
         if (Input.GetKeyDown(KeyCode.F10))
         {
             if (_playerInventory == null) return;
 
-            ItemBase ranged02 = ItemDatabase.Instance.CreateItem("Magic02");
-            if (ranged02 != null)
+            ItemBase magic2 = ItemDatabase.Instance.CreateItem("Magic02");
+            if (magic2 != null)
             {
-                bool added = _playerInventory.AddItem(ranged02);
-                if (added)
-                    Debug.Log("[InputController] 已将 Magic02（魔法武器）添加到背包。");
+                if (_playerInventory.AddItem(magic2))
+                    Debug.Log("[InputController] Added Magic02 (ranged weapon) to backpack.");
                 else
-                    Debug.LogWarning("[InputController] 背包已满或添加失败，无法获得 Helmet01（头盔）。");
+                    Debug.LogWarning("[InputController] Could not add Magic02 - backpack full or addition failed.");
             }
             else
             {
-                Debug.LogError("[InputController] ItemDatabase 中未找到 ID = Magic01，请确认 HelmetData 已正确配置。");
+                Debug.LogError("[InputController] ItemDatabase missing Data with ID = Magic02.");
             }
         }
 
-        // —— 新增：按下 M 键，打开商店面板 —— 
+        // Press M: open shop UI
         if (Input.GetKeyDown(KeyCode.M))
         {
-            // 只有当在 ShopRoom 场景并且 UIManager 成功缓存了 shopCanvas 时，这里才会真正打开商店
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.OpenShop();
             }
         }
     }
+
+
 }

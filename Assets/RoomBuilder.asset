@@ -19,5 +19,5 @@ MonoBehaviour:
   - EnemyRoom4
   - EnemyRoom5
   shopRoomSceneName: ShopRoom
-  regularRoomsPerStage: 1
-  totalStages: 3
+  regularRoomsPerStage: 3
+  totalStages: 1

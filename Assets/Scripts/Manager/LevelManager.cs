@@ -4,11 +4,16 @@ using UnityEngine.SceneManagement;
 public class LevelManager : MonoBehaviour
 {
     [Header("Stage & Manager")]
-    public int startStage = 1;
+    public int startStage = 0;
     public int totalStages = 3;
-    public RoomManager roomManager;  // 在 Inspector 中拖入同一个 GameManager 上的 RoomManager
+    public RoomManager roomManager;
+    public ScoreManager scoreManager;
+    public GameObject gameOverCanvas;
+    public GameOverUIManager gameOverUIManager;
+    public int currentStage;
 
-    private int currentStage;
+    [Header("Score and Currency UI Canvas")]
+    [SerializeField] private GameObject scoreAndCurrencyCanvas;
 
     private void Awake()
     {
@@ -17,8 +22,10 @@ public class LevelManager : MonoBehaviour
 
     private void Start()
     {
+       
         currentStage = startStage;
-      
+       
+
     }
 
     /// <summary>
@@ -26,9 +33,18 @@ public class LevelManager : MonoBehaviour
     /// </summary>
     public void BeginStage(int stageIndex)
     {
-        Debug.Log($"[LevelManager] 开始第 {stageIndex} 阶段");
+        currentStage++;
         roomManager.GenerateStage(stageIndex);
         roomManager.LoadCurrentRoom();
+
+        // Ensure scoreManager is active
+        if (!scoreManager.gameObject.activeInHierarchy)
+            scoreManager.gameObject.SetActive(true);
+
+        // If scoreManager is not assigned, find it
+        if (scoreManager == null)
+            scoreManager = FindObjectOfType<ScoreManager>();
+        
     }
 
     /// <summary>
@@ -46,13 +62,27 @@ public class LevelManager : MonoBehaviour
             }
             else
             {
+
                 Debug.Log("[LevelManager] 所有阶段已完成，游戏胜利！");
+
+                gameOverCanvas.SetActive(true);
+                gameOverUIManager = FindObjectOfType<GameOverUIManager>();
+                if (scoreManager.isMax())             
+                    gameOverUIManager.ShowGameOverUI(scoreManager.FinalScore, true);
+                else
+                    gameOverUIManager.ShowGameOverUI(scoreManager.FinalScore, false);
+               
                 SceneManager.LoadScene("Home");
-                Destroy(gameObject);
+                GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
+                playerObject.transform.position = new Vector3(8f, 5f, 0f);
+                PlayerAttributes attr = playerObject.GetComponent<PlayerAttributes>();
+                attr.Reset();
+                currentStage = 0; 
+                
             }
         }
     }
-
+   
     // e.g. 在玩家通过传送门时由 Portal 脚本调用：
     // FindObjectOfType<LevelManager>().NextRoomOrStage();
 }
